@@ -1,0 +1,14 @@
+npm install \
+react-router-dom \
+axios \
+react-hook-form \
+zod \
+@hookform/resolvers \
+@tanstack/react-query \
+lucide-react \
+sonner \
+clsx \
+tailwindcss \
+@tailwindcss/vite
+
+#cai thu vien nhe
