@@ -1,0 +1,10 @@
+export const LESSON_TYPE = {
+    READING: "READING",
+    LECTURE: "LECTURE",
+    PRACTICE: "PRACTICE",
+};
+
+export const PRACTICE_TAB = {
+    DESCRIPTION: "DESCRIPTION",
+    SUBMISSION: "SUBMISSION",
+};
