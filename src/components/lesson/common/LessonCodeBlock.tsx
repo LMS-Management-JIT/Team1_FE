@@ -1,12 +1,30 @@
-const LessonCodeBlock = ({language, children}) => {
+import {Copy} from "lucide-react";
+
+interface Props {
+    code: string;
+    language?: string;
+}
+
+const LessonCodeBlock = ({code, language = "text"}: Props) => {
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(code);
+    };
+
     return (
-        <div className="overflow-hidden rounded-xl border border-gray-200">
-            <div className="bg-gray-800 px-4 py-2 text-sm text-gray-200">
-                {language}
+        <div className="overflow-hidden rounded-2xl border">
+
+            <div className="flex items-center justify-between bg-slate-800 px-5 py-3 text-white">
+                <span className="text-sm uppercase">
+                    {language}
+                </span>
+                <button onClick={handleCopy}>
+                    <Copy size={18}/>
+                </button>
             </div>
 
-            <pre className="overflow-x-auto bg-gray-900 p-4 text-sm text-green-400">
-                <code>{children}</code>
+            <pre className="overflow-auto bg-slate-900 p-6 text-sm text-green-300">
+                <code>{code}</code>
             </pre>
         </div>
     );

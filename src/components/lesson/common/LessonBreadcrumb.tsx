@@ -1,25 +1,26 @@
 import {ChevronRight} from "lucide-react";
 
-const LessonBreadcrumb = ({items = []}) => {
+interface LessonBreadcrumbProps {
+    items: string[];
+}
+
+const LessonBreadcrumb = ({items}: LessonBreadcrumbProps) => {
     return (
-        <nav className="mb-6 flex items-center text-sm text-gray-500">
+        <nav className="mb-6 flex items-center text-sm text-gray-400">
             {items.map((item, index) => (
                 <div key={index} className="flex items-center">
                     <span
-                        className={`${
+                        className={
                             index === items.length - 1
-                                ? "font-medium text-gray-900"
+                                ? "font-semibold text-gray-700"
                                 : ""
-                        }`}
+                        }
                     >
                         {item}
                     </span>
 
-                    {index < items.length - 1 && (
-                        <ChevronRight
-                            size={16}
-                            className="mx-2 text-gray-400"
-                        />
+                    {index !== items.length - 1 && (
+                        <ChevronRight size={15} className="mx-2"/>
                     )}
                 </div>
             ))}

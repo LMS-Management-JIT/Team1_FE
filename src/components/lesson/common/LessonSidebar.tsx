@@ -1,43 +1,82 @@
-const LessonSidebar = ({lessons = [], currentLessonId}) => {
+import {PlayCircle} from "lucide-react";
+import type {LessonSidebarData} from "../../../types/lessonSidebar";
+
+interface Props {
+    data: LessonSidebarData;
+    currentLessonId: string;
+}
+
+const LessonSidebar = ({data, currentLessonId}: Props) => {
+
+    const progress =
+        data.totalLessons === 0
+            ? 0
+            : (data.completedLessons / data.totalLessons) * 100;
+
     return (
-        <aside className="w-80 rounded-xl border bg-white shadow-sm">
-            <div className="border-b p-5">
-                <h2 className="text-lg font-semibold">
-                    Danh sách bài học
-                </h2>
+        <aside className="rounded-2xl bg-white p-6 shadow">
+
+            <h2 className="text-xl font-semibold">
+                {data.moduleName}
+            </h2>
+
+            <p className="text-sm text-gray-500">
+                {data.topicName}
+            </p>
+
+            <div className="mt-4 h-2 rounded-full bg-gray-200">
+
+                <div
+                    className="h-2 rounded-full bg-orange-500"
+                    style={{
+                        width: `${progress}%`,
+                    }}
+                />
+
             </div>
 
-            <div className="max-h-[650px] overflow-y-auto">
-                {lessons.map((lesson, index) => (
-                    <button
-                        key={lesson.id}
-                        className={`flex w-full items-start gap-3 border-b p-4 text-left transition hover:bg-gray-50 ${
-                            lesson.id === currentLessonId
-                                ? "bg-blue-50"
-                                : ""
-                        }`}
-                    >
-                        <div
-                            className={`mt-1 flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold ${
-                                lesson.id === currentLessonId
-                                    ? "bg-blue-600 text-white"
-                                    : "bg-gray-200"
+            <p className="mt-2 text-sm text-gray-500">
+                {data.completedLessons}/{data.totalLessons} bài học
+            </p>
+
+            <div className="mt-6 space-y-2">
+
+                {data.lessons.map((lesson) => {
+
+                    const active =
+                        lesson.id === currentLessonId;
+
+                    return (
+
+                        <button
+                            key={lesson.id}
+                            className={`flex w-full gap-3 rounded-xl p-3 text-left transition ${
+                                active
+                                    ? "bg-orange-50 border border-orange-300"
+                                    : "hover:bg-slate-100"
                             }`}
                         >
-                            {index + 1}
-                        </div>
 
-                        <div>
-                            <p className="font-medium">
-                                {lesson.title}
-                            </p>
+                            <PlayCircle
+                                size={18}
+                                className={
+                                    active
+                                        ? "text-orange-500"
+                                        : "text-gray-400"
+                                }
+                            />
 
-                            <p className="mt-1 text-sm text-gray-500">
-                                {lesson.type}
-                            </p>
-                        </div>
-                    </button>
-                ))}
+                            <div>
+                                <p className="font-medium">
+                                    {lesson.lessonOrder}. {lesson.lessonName}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                    {lesson.type}
+                                </p>
+                            </div>
+                        </button>
+                    );
+                })}
             </div>
         </aside>
     );

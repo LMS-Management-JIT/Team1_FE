@@ -1,7 +1,14 @@
-import DashboardUserPage from "./feature/dashboard-user/DashboardUserPage";
+// import AppRoutes from "./routes/AppRoutes";
+//
+// function App() {
+//     return <AppRoutes/>;
+// }
+//
+// export default App;
+import LessonDetailPage from "./feature/lesson/pages/LessonDetailPage";
 
 function App() {
-    return <DashboardUserPage/>;
+    return <LessonDetailPage/>;
 }
 
 export default App;

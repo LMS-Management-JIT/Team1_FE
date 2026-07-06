@@ -1,25 +1,21 @@
-import LessonCodeBlock from "../common/LessonCodeBlock.tsx";
-import LessonInfo from "../common/LessonInfo.tsx";
+import LessonInfo from "../common/LessonInfo";
+import type {Lesson} from "../../../types/lesson";
 
-const ReadingContent = ({lesson}) => {
+interface ReadingContentProps {
+    lesson: Lesson;
+}
+
+const ReadingContent = ({lesson}: ReadingContentProps) => {
     return (
         <div className="space-y-8">
-            <LessonInfo
-                moduleName={lesson.moduleName}
-                title={lesson.title}
-                type="Bài đọc"
-                duration={lesson.duration}
-            />
+            <LessonInfo lesson={lesson}/>
 
-            <div className="prose max-w-none">
-                <p>{lesson.description}</p>
-                {lesson.code && (
-                    <LessonCodeBlock language="python">
-                        {lesson.code}
-                    </LessonCodeBlock>
-                )}
-                <div>{lesson.content}</div>
-            </div>
+            <div
+                className="prose max-w-none"
+                dangerouslySetInnerHTML={{
+                    __html: lesson.content,
+                }}
+            />
         </div>
     );
 };

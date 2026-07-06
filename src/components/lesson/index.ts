@@ -4,7 +4,7 @@ export {default as LessonLoading} from "./common/LessonLoading.tsx";
 export {default as LessonCodeBlock} from "./common/LessonCodeBlock.tsx";
 export {default as LessonPagination} from "./common/LessonPagination.tsx";
 export {default as LessonSidebar} from "./common/LessonSidebar.tsx";
-
+export {default as LessonInfo} from "./common/LessonInfo";
 export {default as ReadingContent} from "./reading/ReadingContent.tsx";
 
 export {default as LectureVideo} from "./lecture/LectureVideo.tsx";
