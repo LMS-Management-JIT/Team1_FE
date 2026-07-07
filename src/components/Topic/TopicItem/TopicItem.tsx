@@ -7,29 +7,41 @@ export function TopicItem({ topic, defaultOpen = false }: { topic: Topic; defaul
     const [open, setOpen] = useState(defaultOpen);
 
     return (
-        <div className="w-full rounded-lg border border-gray-200 space-y-6">
+        <article
+            className={`w-full overflow-hidden rounded-[18px] border bg-white shadow-sm transition ${
+                open ? "border-orange-200" : "border-slate-200"
+            }`}
+        >
             <button
                 type="button"
                 onClick={() => setOpen((prev) => !prev)}
-                className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-gray-50"
+                className={`topic-item__button ${
+                    open ? "bg-orange-50/55" : "bg-white hover:bg-slate-50"
+                }`}
             >
-        <span className="flex items-center gap-3 font-semibold text-gray-800">
-          <AlignJustify size={16} className="text-gray-500" />
-            {topic.title}
-        </span>
+                <span className="topic-item__main">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 ring-1 ring-slate-200">
+                        <AlignJustify size={19} />
+                    </span>
+                    <span className="min-w-0">
+                        <span className="block truncate text-base font-semibold leading-6 text-slate-900">{topic.title}</span>
+                        <span className="mt-0.5 block text-sm leading-5 text-slate-500">{topic.lessons.length} bài học</span>
+                    </span>
+                </span>
+
                 <ChevronDown
-                    size={18}
-                    className={`text-gray-500 transition-transform ${open ? "rotate-180" : ""}`}
+                    size={21}
+                    className={`shrink-0 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`}
                 />
             </button>
 
             {open && topic.lessons.length > 0 && (
-                <div className="w-full space-y-1 pb-3">
+                <div className="topic-item__content">
                     {topic.lessons.map((lesson) => (
                         <LessonRow key={lesson.id} lesson={lesson} />
                     ))}
                 </div>
             )}
-        </div>
+        </article>
     );
 }

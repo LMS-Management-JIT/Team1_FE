@@ -1,3 +1,4 @@
+import { NavLink } from "react-router-dom";
 import { Bell, Flag, Search } from "lucide-react";
 import "./Header.css";
 
@@ -10,11 +11,9 @@ export function Header() {
             </div>
 
             <nav className="header-nav">
-                <a className="active" href="#">
-                    Trang chủ
-                </a>
-                <a href="#">Khóa học</a>
-                <a href="#">Liên hệ</a>
+                <NavLink to="/">Trang chủ</NavLink>
+                <NavLink to="/topics/1">Khóa học</NavLink>
+                <NavLink to="/">Liên hệ</NavLink>
             </nav>
 
             <div className="header-actions">

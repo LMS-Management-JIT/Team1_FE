@@ -1,11 +1,10 @@
 .app-header {
-    position: relative;
-    height: var(--header-height);
+    min-height: var(--header-height);
     padding: 0 32px;
     background: var(--color-primary);
     display: flex;
     align-items: center;
-    gap: 48px;
+    gap: 28px;
     color: #fff;
 }
 
@@ -13,6 +12,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    flex: 0 0 auto;
     font-weight: 700;
 }
 
@@ -27,20 +27,20 @@
 }
 
 .header-nav {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
+    margin: 0 auto;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 14px;
 }
 
 .header-nav a {
     color: #fff;
     font-size: 14px;
-    padding: 9px 16px;
+    padding: 9px 18px;
     border-radius: 9px;
     transition: 0.2s ease;
+    white-space: nowrap;
 }
 
 .header-nav a.active,
@@ -49,16 +49,17 @@
 }
 
 .header-actions {
-    margin-left: auto;
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: 12px;
+    flex: 0 1 420px;
 }
 
 .header-search {
-    height: 30px;
-    width: 200px;
-    padding: 0 12px;
+    height: 34px;
+    width: min(260px, 100%);
+    padding: 0 14px;
     border-radius: var(--radius-full);
     background: rgba(255, 255, 255, 0.18);
     display: flex;
@@ -67,6 +68,7 @@
 }
 
 .header-search input {
+    min-width: 0;
     width: 100%;
     border: 0;
     outline: 0;
@@ -81,8 +83,8 @@
 
 .header-icon-btn {
     position: relative;
-    width: 30px;
-    height: 30px;
+    width: 34px;
+    height: 34px;
     border: 0;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.2);
@@ -90,29 +92,64 @@
     display: grid;
     place-items: center;
     cursor: pointer;
+    flex: 0 0 auto;
 }
 
 .header-icon-btn span {
     position: absolute;
     top: -5px;
     right: -4px;
-    min-width: 15px;
-    height: 15px;
+    min-width: 16px;
+    height: 16px;
     padding: 0 4px;
     border-radius: var(--radius-full);
     background: var(--color-danger);
     color: #fff;
     font-size: 10px;
-    line-height: 15px;
+    line-height: 16px;
 }
 
 .header-avatar {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border: 0;
     border-radius: 50%;
     background: #fff3e8;
     color: var(--color-primary);
     font-weight: 700;
     cursor: pointer;
+    flex: 0 0 auto;
+}
+
+@media (max-width: 980px) {
+    .app-header {
+        flex-wrap: wrap;
+        gap: 12px 18px;
+        padding: 12px 20px;
+    }
+
+    .header-nav {
+        order: 3;
+        width: 100%;
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding-bottom: 2px;
+    }
+
+    .header-actions {
+        margin-left: auto;
+        flex: 1 1 360px;
+    }
+}
+
+@media (max-width: 640px) {
+    .header-actions {
+        width: 100%;
+        flex-basis: 100%;
+    }
+
+    .header-search {
+        flex: 1 1 auto;
+        width: auto;
+    }
 }

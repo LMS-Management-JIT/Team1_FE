@@ -4,7 +4,8 @@ import type {
     DashboardTeacher,
 } from "../types/dashboard";
 
-const API_BASE_URL = "http://localhost:8080/api/dashboard";
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080/api").replace(/\/$/, "");
+const DASHBOARD_API_URL = `${API_BASE_URL}/dashboard`;
 
 async function request<T>(url: string): Promise<T> {
     const response = await fetch(url);
@@ -18,18 +19,18 @@ async function request<T>(url: string): Promise<T> {
 
 export function getStudentCourses(studentId: string) {
     return request<DashboardCourse[]>(
-        `${API_BASE_URL}/students/${studentId}/courses`,
+        `${DASHBOARD_API_URL}/students/${studentId}/courses`,
     );
 }
 
 export function getStudentCourseProgress(studentId: string) {
     return request<DashboardCourseProgress[]>(
-        `${API_BASE_URL}/students/${studentId}/course-progress`,
+        `${DASHBOARD_API_URL}/students/${studentId}/course-progress`,
     );
 }
 
 export function getStudentTeachers(studentId: string) {
     return request<DashboardTeacher[]>(
-        `${API_BASE_URL}/students/${studentId}/teachers`,
+        `${DASHBOARD_API_URL}/students/${studentId}/teachers`,
     );
 }
