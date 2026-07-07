@@ -3,7 +3,7 @@ import { Header } from "../../layouts/Header/Header";
 import {
     getStudentCourses,
     getStudentCourseProgress,
-    getStudentTeachers,
+    getAllTeachers,
 } from "../../services/dashboardService";
 import type {
     DashboardCourse,
@@ -16,7 +16,7 @@ import { TeacherSection } from "./components/TeacherSection/TeacherSection";
 import "./DashboardUserPage.css";
 import { TeacherProfileModal } from "./components/TeacherProfileModal/TeacherProfileModal";
 
-const STUDENT_ID = "CTcfhBa5cqfs8TPITdsD";
+const STUDENT_ID = "F6nosEpzCBMUBZeAyHCM";
 
 export default function DashboardUserPage() {
     const [courses, setCourses] = useState<DashboardCourse[]>([]);
@@ -46,7 +46,7 @@ export default function DashboardUserPage() {
             .catch(() => setProgressError("Không tải được tiến độ học tập."))
             .finally(() => setLoadingProgress(false));
 
-        getStudentTeachers(STUDENT_ID)
+        getAllTeachers()
             .then(setTeachers)
             .catch(() => setTeacherError("Không tải được thông tin giảng viên."))
             .finally(() => setLoadingTeachers(false));

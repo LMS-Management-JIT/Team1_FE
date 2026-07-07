@@ -33,3 +33,6 @@ export function getStudentTeachers(studentId: string) {
         `${API_BASE_URL}/students/${studentId}/teachers`,
     );
 }
+export function getAllTeachers() {
+    return request<DashboardTeacher[]>(`${API_BASE_URL}/teachers`);
+}
