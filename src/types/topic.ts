@@ -1,19 +1,35 @@
+export type LessonType =
+    | "READING"
+    | "LECTURE"
+    | "PRACTICE"
+    | string;
+
+
 export interface Lesson {
   id: string;
-  title: string;
-  meta: string;
-  type: string;
-  status: "completed" | "current" | "upcoming";
+  lessonName: string;
+  type: LessonType;
+  meta?: string;
 }
 
-export interface Topic {
-  id: string;
-  title: string;
+export interface TopicSummary {
+  id?: string;
+  topicId?: string;
+  topicName: string;
+}
+
+export interface TopicWithLessons {
+  id?: string;
+  topicId?: string;
+
+  topicName: string;
+
   lessons: Lesson[];
 }
 
+
 export interface CourseDocument {
   id: string;
-  title: string;
+  documentName: string;
   url: string;
 }

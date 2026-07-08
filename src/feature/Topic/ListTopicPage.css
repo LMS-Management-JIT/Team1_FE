@@ -23,8 +23,14 @@
     margin-bottom: -10px;
 }
 
-.topic-page__breadcrumb span {
+.topic-page__breadcrumb a {
     color: var(--color-primary);
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.topic-page__breadcrumb a:hover {
+    color: var(--color-primary-dark);
 }
 
 .topic-page__breadcrumb strong {
@@ -32,6 +38,7 @@
     font-weight: 700;
 }
 
+.topic-page__documents,
 .topic-page__lessons {
     display: flex;
     flex-direction: column;
@@ -66,41 +73,16 @@
     box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
 }
 
-.course-documents__header {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    padding: 28px 44px 14px;
-}
-
-.course-documents__header-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 14px;
-    display: grid;
-    place-items: center;
-    flex: 0 0 auto;
-    background: #fff7ed;
-    color: var(--color-primary);
-}
-
-.course-documents__title {
-    color: #0f172a;
-    font-size: 24px;
-    font-weight: 700;
-    line-height: 1.25;
-}
-
 .course-documents__list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 0 44px 32px;
+    gap: 4px;
+    padding: 22px 44px;
 }
 
 .course-documents__link {
-    min-height: 52px;
-    padding: 12px 18px;
+    min-height: 42px;
+    padding: 8px 18px;
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -187,14 +169,9 @@
         font-size: 21px;
     }
 
-    .course-documents__header,
     .course-documents__list {
         padding-left: 22px;
         padding-right: 22px;
-    }
-
-    .course-documents__title {
-        font-size: 21px;
     }
 
     .topic-item__button,

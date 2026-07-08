@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { AlignJustify, ChevronDown } from "lucide-react";
-import type { Topic } from "../../../types/topic.ts";
+import type { TopicWithLessons } from "../../../types/topic.ts";
 import { LessonRow } from "../LessonRow/LessonRow.tsx";
 
-export function TopicItem({ topic, defaultOpen = false }: { topic: Topic; defaultOpen?: boolean }) {
+export function TopicItem({ topic, defaultOpen = false }: { topic: TopicWithLessons; defaultOpen?: boolean }) {
     const [open, setOpen] = useState(defaultOpen);
 
     return (
@@ -24,7 +24,7 @@ export function TopicItem({ topic, defaultOpen = false }: { topic: Topic; defaul
                         <AlignJustify size={19} />
                     </span>
                     <span className="min-w-0">
-                        <span className="block truncate text-base font-semibold leading-6 text-slate-900">{topic.title}</span>
+                        <span className="block truncate text-base font-semibold leading-6 text-slate-900">{topic.topicName}</span>
                         <span className="mt-0.5 block text-sm leading-5 text-slate-500">{topic.lessons.length} bài học</span>
                     </span>
                 </span>
