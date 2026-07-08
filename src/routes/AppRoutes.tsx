@@ -6,7 +6,7 @@ function DashboardPlaceholder() {
     return <div className="p-8">Dashboard — sẽ code ở bước tiếp theo</div>;
 }
 
-export function AppRouter() {
+export function AppRoutes() {
     return (
         <BrowserRouter>
             <Routes>

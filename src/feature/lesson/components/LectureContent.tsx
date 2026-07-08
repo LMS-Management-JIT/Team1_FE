@@ -1,5 +1,5 @@
 import {PlayCircle} from "lucide-react";
-import type {Lesson} from "../../../types/lesson.types";
+import type {Lesson} from "../../../types/lesson.ts";
 import {SafeHtmlContent} from "../../../components/lesson/common/SafeHtmlContent";
 
 interface LectureContentProps {

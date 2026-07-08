@@ -1,7 +1,7 @@
 import {useState} from "react";
 import {ChevronLeft, ChevronRight} from "lucide-react";
 import clsx from "clsx";
-import type {LessonSummary} from "../../../types/lesson.types";
+import type {LessonSummary} from "../../../types/lesson.ts";
 
 interface LessonPaginationProps {
     lessons: LessonSummary[] | undefined | null;

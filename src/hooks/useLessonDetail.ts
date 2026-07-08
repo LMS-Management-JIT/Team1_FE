@@ -1,5 +1,5 @@
 import {useQuery} from "@tanstack/react-query";
-import {getLessonById} from "../services/lesson.service";
+import {getLessonById} from "../services/lessonService.ts";
 
 export function useLessonDetail(lessonId: string | undefined) {
     return useQuery({

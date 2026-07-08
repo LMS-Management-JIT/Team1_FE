@@ -1,6 +1,6 @@
 import {useState} from "react";
 import clsx from "clsx";
-import type {Lesson} from "../../../types/lesson.types";
+import type {Lesson} from "../../../types/lesson.ts";
 import {CodeEditorPanel} from "./CodeEditorPanel.tsx";
 import {SafeHtmlContent} from "../../../components/lesson/common/SafeHtmlContent";
 

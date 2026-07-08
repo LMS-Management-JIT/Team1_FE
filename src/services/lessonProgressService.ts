@@ -1,11 +1,21 @@
 import {apiClient} from "./axiosClient";
-import type {LessonProgress, LessonProgressRequest} from "../types/lessonProgress.types";
+import type {LessonProgress, LessonProgressRequest} from "../types/lessonProgress.ts";
 
-export async function getProgressByStudent(studentId: string): Promise<LessonProgress[]> {
-    const {data} = await apiClient.get<LessonProgress[]>(
+// export async function getProgressByStudent(studentId: string): Promise<LessonProgress[]> {
+//     const {data} = await apiClient.get<LessonProgress[]>(
+//         `/lesson-progress/student/${studentId}`
+//     );
+//     return data;
+// }
+export async function getProgressByStudent(studentId: string) {
+    const response = await apiClient.get(
         `/lesson-progress/student/${studentId}`
     );
-    return data;
+
+    console.log("Response:", response.data);
+    console.log("Array:", Array.isArray(response.data));
+
+    return response.data;
 }
 
 // MỚI

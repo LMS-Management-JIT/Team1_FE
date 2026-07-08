@@ -1,5 +1,5 @@
 import {useQuery} from "@tanstack/react-query";
-import {getTopicDetail} from "../services/topic.service";
+import {getTopicDetail} from "../services/topicService.ts";
 
 export function useTopicDetail(topicId: string | undefined) {
     return useQuery({

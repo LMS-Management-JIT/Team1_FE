@@ -1,6 +1,6 @@
 import {CheckCircle2, Lock, PlayCircle} from "lucide-react";
 import clsx from "clsx";
-import type {LessonSummary} from "../../../types/lesson.types";
+import type {LessonSummary} from "../../../types/lesson.ts";
 
 interface LessonSidebarProps {
     topicName: string;

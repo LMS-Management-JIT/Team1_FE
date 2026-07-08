@@ -5,8 +5,8 @@ import {
     getProgressByStudent,
     getProgressByStudentAndLesson,
     updateProgress,
-} from "../services/lessonProgress.service";
-import type {LessonProgressRequest} from "../types/lessonProgress.types";
+} from "../services/lessonProgressService.ts";
+import type {LessonProgressRequest} from "../types/lessonProgress.ts";
 
 export function useStudentProgress(studentId: string | undefined) {
     return useQuery({

@@ -1,6 +1,6 @@
 import {apiClient} from "./axiosClient";
-import type {TopicSummary, TopicWithLessons} from "../types/topic.types";
-import type {LessonSummary} from "../types/lesson.types";
+import type {TopicSummary, TopicWithLessons} from "../types/topic.ts";
+import type {LessonSummary} from "../types/lesson.ts";
 
 export async function getTopicDetail(topicId: string): Promise<TopicWithLessons> {
     const {data} = await apiClient.get<TopicWithLessons>(`/topics/${topicId}`);

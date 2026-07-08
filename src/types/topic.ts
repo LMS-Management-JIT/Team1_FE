@@ -1,4 +1,4 @@
-import type {LessonSummary} from "./lesson.types";
+import type {LessonSummary} from "./lesson.ts";
 
 export interface TopicSummary {
     id: string;
