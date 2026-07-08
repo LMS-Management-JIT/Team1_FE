@@ -1,57 +1,95 @@
-import {LessonBreadcrumb, LessonContainer, LessonSidebar,} from "../../../components/lesson";
+import {useNavigate, useParams} from "react-router-dom";
+import {useLessonDetail} from "../../../hooks/useLessonDetail";
+import {useTopicDetail} from "../../../hooks/useTopicDetail";
+import {useStudentProgress, useSubmitProgress,} from "../../../hooks/useLessonProgress";
+import {useAuthContext} from "../../auth/context/AuthContext";
+import {buildLessonDetailPath} from "../../../constants/routes";
+import {LessonBreadcrumb} from "../components/LessonBreadcrumb.tsx";
+import {LessonSidebar} from "../components/LessonSidebar.tsx";
+import {LessonPagination} from "../components/LessonPagination.tsx";
+import {ReadingContent} from "../components/ReadingContent.tsx";
+import {LectureContent} from "../components/LectureContent.tsx";
+import {PracticeContent} from "../components/PracticeContent.tsx";
+import {Loading} from "../../../components/lesson/ui/Loading";
 
-import useLesson from "../hooks/useLesson";
-import useLectureSummary from "../hooks/useLectureSummary";
-import {type Lesson} from "../../../types";
+export function LessonDetailPage() {
+    const {topicId, lessonId} = useParams<{ topicId: string; lessonId: string }>();
+    const navigate = useNavigate();
+    const {user} = useAuthContext();
 
-const LessonDetailPage = () => {
-    const {lesson, loading} = useLesson();
-    const {summary} = useLectureSummary();
+    // Tất cả hook phải gọi KHÔNG điều kiện, trước mọi early return
+    const {data: lesson, isLoading: isLessonLoading} = useLessonDetail(lessonId);
+    const {data: topic, isLoading: isTopicLoading} = useTopicDetail(topicId);
+    const {data: progressList} = useStudentProgress(user?.uid);
+    const {mutate: submitProgress, isPending: isSubmitting} = useSubmitProgress(
+        user?.uid,
+        lesson?.id // ⚠️ optional chaining vì lesson có thể chưa load xong
+    );
 
-    // TODO: Thay bằng API lấy danh sách lesson của topic/module
-    const moduleLessons: Lesson[] = [];
-
-    if (loading) {
+    if (isLessonLoading || isTopicLoading || !lesson || !topic) {
         return (
-            <LessonContainer>
-                <p className="text-center py-10">Đang tải bài học...</p>
-            </LessonContainer>
+            <div className="flex min-h-screen items-center justify-center">
+                <Loading/>
+            </div>
         );
     }
 
-    if (!lesson) {
-        return (
-            <LessonContainer>
-                <p className="text-center py-10 text-red-500">
-                    Không tìm thấy bài học.
-                </p>
-            </LessonContainer>
-        );
-    }
+    // Từ đây trở xuống, TypeScript đã narrow `lesson` và `topic` là defined
+    const completedLessonIds = new Set(
+        (progressList ?? []).filter((p) => p.completed).map((p) => p.lessonId)
+    );
+
+    const handleSelectLesson = (nextLessonId: string) => {
+        navigate(buildLessonDetailPath(topic.id, nextLessonId));
+    };
+
+    const handleSubmitPractice = (code: string) => {
+        if (!user) return;
+        submitProgress({
+            studentId: user.uid,
+            lessonId: lesson.id,
+            progress: 100,
+            completed: true,
+            lastPosition: code.length,
+        });
+    };
 
     return (
-        <LessonContainer>
+        <div className="mx-auto max-w-7xl px-6 py-8">
+            <LessonBreadcrumb
+                courseName={topic.courseName ?? ""}
+                topicName={topic.topicName}
+                lessonName={lesson.lessonName}
+            />
+            <h1 className="mb-6 text-2xl font-bold text-gray-900">{lesson.lessonName}</h1>
 
-            <LessonBreadcrumb/>
+            <div className="flex gap-6">
+                <div className="flex-1">
+                    {lesson.type === "READING" && <ReadingContent lesson={lesson}/>}
+                    {lesson.type === "LECTURE" && <LectureContent lesson={lesson}/>}
+                    {lesson.type === "PRACTICE" && (
+                        <PracticeContent
+                            lesson={lesson}
+                            onSubmit={handleSubmitPractice}
+                            isSubmitting={isSubmitting}
+                        />
+                    )}
 
-            <LessonInfo/>
-
-            <div className="grid grid-cols-12 gap-8">
-
-                <div className="col-span-8">
-                    Reading / Lecture / Practice
+                    <LessonPagination
+                        lessons={topic.lessons}
+                        currentLessonId={lesson.id}
+                        onSelectLesson={handleSelectLesson}
+                    />
                 </div>
 
-                <div className="col-span-4">
-                    <LessonSidebar/>
-                </div>
-
+                <LessonSidebar
+                    topicName={topic.topicName}
+                    lessons={topic.lessons}
+                    currentLessonId={lesson.id}
+                    completedLessonIds={completedLessonIds}
+                    onSelectLesson={handleSelectLesson}
+                />
             </div>
-
-            <LessonPagination/>
-
-        </LessonContainer>
+        </div>
     );
-};
-
-export default LessonDetailPage;
+}

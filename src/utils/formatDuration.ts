@@ -1,4 +1,4 @@
-export const formatDuration = (minutes) => {
+export const formatDuration = (minutes: number) => {
     const hour = Math.floor(minutes / 60);
     const minute = minutes % 60;
 

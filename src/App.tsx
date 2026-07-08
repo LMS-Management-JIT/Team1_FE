@@ -5,10 +5,10 @@
 // }
 //
 // export default App;
-import LessonDetailPage from "./feature/lesson/pages/LessonDetailPage";
+import ReadingLessonPage from "./feature/lesson/pages/ReadingLessonPage.tsx";
 
 function App() {
-    return <LessonDetailPage/>;
+    return <ReadingLessonPage/>;
 }
 
 export default App;

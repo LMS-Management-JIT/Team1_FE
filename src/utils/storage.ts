@@ -1,14 +1,14 @@
 export const storage = {
-    get(key) {
+    get(key: string) {
         const value = localStorage.getItem(key);
         return value ? JSON.parse(value) : null;
     },
 
-    set(key, value) {
+    set(key: string, value: unknown) {
         localStorage.setItem(key, JSON.stringify(value));
     },
 
-    remove(key) {
+    remove(key: string) {
         localStorage.removeItem(key);
     },
 
