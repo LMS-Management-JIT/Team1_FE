@@ -1,6 +1,5 @@
-import { Mail, MapPin, Phone, UserRound } from "lucide-react";
+import { MessageCircle, UserRound } from "lucide-react";
 import type { DashboardTeacher } from "../../../../types/dashboard";
-import "./TeacherSection.css";
 
 interface TeacherSectionProps {
     teachers: DashboardTeacher[];
@@ -15,80 +14,56 @@ export function TeacherSection({
                                    error,
                                    onViewProfile,
                                }: TeacherSectionProps) {
-    if (loading) {
-        return <section className="teacher-section">Đang tải giảng viên...</section>;
-    }
+    if (loading) return <section className="mt-8">Đang tải giảng viên...</section>;
 
-    if (error) {
-        return <section className="teacher-section error">{error}</section>;
-    }
-
-    if (teachers.length === 0) {
-        return (
-            <section className="teacher-section empty">
-                Chưa có thông tin giảng viên.
-            </section>
-        );
-    }
+    if (error) return <section className="mt-8 rounded-xl bg-white p-5">{error}</section>;
 
     return (
-        <section className="teacher-section">
-            <div className="teacher-section-header">
-                <h2>Giảng viên phụ trách</h2>
-                <p>Thông tin giảng viên đang hỗ trợ lớp học của bạn</p>
+        <section className="mt-10">
+            <div className="mb-5 flex items-center justify-between">
+                <h2 className="text-2xl font-extrabold text-[#202020]">Giảng viên</h2>
+                <button className="text-sm font-medium text-[#ff6b13]">Xem tất cả →</button>
             </div>
 
-            <div className="teacher-list">
+            <div className="grid grid-cols-3 gap-5">
                 {teachers.map((teacher) => (
-                    <article className="teacher-card" key={teacher.id}>
-                        <div className="teacher-avatar">
-                            <UserRound size={28} />
+                    <article
+                        key={teacher.id}
+                        className="group relative min-h-[190px] overflow-hidden rounded-xl bg-white p-6 text-center shadow-[0_14px_32px_rgba(0,0,0,0.08)]"
+                    >
+                        <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-orange-50 text-[#ff6b13]">
+                            <UserRound size={30} />
                         </div>
 
-                        <div className="teacher-info">
-                            <div className="teacher-name-row">
-                                <h3>{teacher.fullName || "Chưa cập nhật tên"}</h3>
+                        <h3 className="mt-4 font-extrabold text-[#202020]">
+                            {teacher.fullName || "Chưa cập nhật tên"}
+                        </h3>
 
-                                <span
-                                    className={
-                                        teacher.available
-                                            ? "teacher-status available"
-                                            : "teacher-status unavailable"
-                                    }
-                                >
-                  {teacher.available ? "Online" : "Offline"}
-                </span>
-                            </div>
+                        <p className="mt-2 text-sm text-gray-500">
+                            {teacher.specialization || "Chưa cập nhật chuyên môn"}
+                        </p>
 
-                            <p className="teacher-specialization">
-                                {teacher.specialization || "Chưa cập nhật chuyên môn"}
-                            </p>
+                        <p className="mt-3 inline-block rounded-full bg-orange-50 px-4 py-1 text-xs font-semibold text-[#ff6b13]">
+                            {teacher.available ? "Đang hoạt động" : "Chưa online"}
+                        </p>
 
-                            <div className="teacher-meta">
-                                {teacher.phoneNumber && (
-                                    <span>
-                    <Phone size={14} />
-                                        {teacher.phoneNumber}
-                  </span>
-                                )}
-
-                                {teacher.address && (
-                                    <span>
-                    <MapPin size={14} />
-                                        {teacher.address}
-                  </span>
-                                )}
-
-                                {teacher.profileId && (
-                                    <span>
-                    <Mail size={14} />
-                    Profile: {teacher.profileId}
-                  </span>
-                                )}
-                            </div>
-
-                            <button type="button" onClick={() => onViewProfile(teacher)}>
+                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[#ff7a2a]/95 opacity-0 transition duration-200 group-hover:opacity-100">
+                            <button
+                                type="button"
+                                onClick={() => onViewProfile(teacher)}
+                                className="flex h-9 w-[150px] items-center justify-center gap-2 rounded-md bg-white text-sm font-bold text-[#ff6b13]"
+                            >
+                                <UserRound size={15} />
                                 Xem hồ sơ
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => alert(`Chat với ${teacher.fullName}`)}
+                                className="flex h-9 w-[150px] items-center justify-center gap-2 rounded-md bg-white text-sm font-bold text-[#ff6b13]"
+                            >
+                                <MessageCircle size={15} />
+                                Nhắn tin
                             </button>
                         </div>
                     </article>

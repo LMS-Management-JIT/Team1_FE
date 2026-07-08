@@ -13,7 +13,6 @@ import type {
 import { CourseCarousel } from "./components/CourseCarousel/CourseCarousel";
 import { ProgressSection } from "./components/ProgressSection/ProgressSection";
 import { TeacherSection } from "./components/TeacherSection/TeacherSection";
-import "./DashboardUserPage.css";
 import { TeacherProfileModal } from "./components/TeacherProfileModal/TeacherProfileModal";
 
 const STUDENT_ID = "F6nosEpzCBMUBZeAyHCM";
@@ -31,9 +30,8 @@ export default function DashboardUserPage() {
     const [progressError, setProgressError] = useState("");
     const [teacherError, setTeacherError] = useState("");
 
-    const [selectedTeacher, setSelectedTeacher] = useState<DashboardTeacher | null>(
-        null,
-    );
+    const [selectedTeacher, setSelectedTeacher] =
+        useState<DashboardTeacher | null>(null);
 
     useEffect(() => {
         getStudentCourses(STUDENT_ID)
@@ -53,10 +51,10 @@ export default function DashboardUserPage() {
     }, []);
 
     return (
-        <div className="dashboard-user-page">
+        <div className="min-h-screen bg-[#f3f3f3]">
             <Header />
 
-            <main className="dashboard-user-main">
+            <main className="mx-auto max-w-[1100px] px-6 py-8">
                 <CourseCarousel
                     courses={courses}
                     loading={loadingCourses}
@@ -76,6 +74,7 @@ export default function DashboardUserPage() {
                     onViewProfile={setSelectedTeacher}
                 />
             </main>
+
             <TeacherProfileModal
                 teacher={selectedTeacher}
                 onClose={() => setSelectedTeacher(null)}
