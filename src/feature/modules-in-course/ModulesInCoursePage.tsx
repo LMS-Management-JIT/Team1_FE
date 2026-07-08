@@ -5,41 +5,170 @@ import {
 } from 'lucide-react'
 import { Header } from "../../layouts/Header/Header"
 
-// Import type và hàm gọi API từ các file service đã tạo ở bước trước
 import type { ModuleResponse } from "../../types/module";
-import { getAllModules } from "../../services/moduleService";
+import type { DashboardCourse } from "../../types/dashboard";
 import { getModulesByCourseId } from "../../services/moduleService";
+import { getStudentCourses } from "../../services/dashboardService";
 
+const STUDENT_ID = "F6nosEpzCBMUBZeAyHCM"; // ID dùng chung với trang Dashboard
+
+// 1. LOGIC TÍNH TOÁN ICON THÔNG MINH THEO TỪ KHÓA
+const getCourseStyles = (course: DashboardCourse, index: number) => {
+  const textToSearch = `${course.courseName} ${course.description}`.toLowerCase();
+
+  // Keyword: UI, Frontend, Web, React, HTML...
+  if (textToSearch.match(/ui|front|react|web|html|css/)) {
+    return {
+      Icon: Zap,
+      colorClass: 'text-orange-500',
+      bgClass: 'bg-orange-50',
+      activeBg: 'bg-gradient-to-br from-orange-500 to-orange-600',
+    };
+  }
+  // Keyword: Backend, Java, API, Data, SQL, Server...
+  if (textToSearch.match(/back|java|api|data|sql|server/)) {
+    return {
+      Icon: Server,
+      colorClass: 'text-slate-500',
+      bgClass: 'bg-slate-100',
+      activeBg: 'bg-gradient-to-br from-slate-600 to-slate-700',
+    };
+  }
+  // Keyword: Fullstack, DevOps, Docker, Cloud, Master...
+  if (textToSearch.match(/full|master|dev|cloud|docker/)) {
+    return {
+      Icon: Layers,
+      colorClass: 'text-emerald-500',
+      bgClass: 'bg-emerald-50',
+      activeBg: 'bg-gradient-to-br from-emerald-500 to-emerald-600',
+    };
+  }
+
+  // Nếu không trúng keyword nào, Random có tính toán dựa theo số thứ tự (index)
+  const fallbacks = [
+    { Icon: Zap, colorClass: 'text-orange-500', bgClass: 'bg-orange-50', activeBg: 'bg-gradient-to-br from-orange-500 to-orange-600' },
+    { Icon: Layers, colorClass: 'text-emerald-500', bgClass: 'bg-emerald-50', activeBg: 'bg-gradient-to-br from-emerald-500 to-emerald-600' },
+    { Icon: Server, colorClass: 'text-slate-500', bgClass: 'bg-slate-100', activeBg: 'bg-gradient-to-br from-slate-600 to-slate-700' }
+  ];
+  return fallbacks[index % 3];
+};
+
+// 2. COMPONENT CON: THẺ HIỂN THỊ KHÓA HỌC Ở SIDEBAR
+const SidebarCourseCard = ({ course, index, isActive, onClick }: { course: DashboardCourse, index: number, isActive: boolean, onClick: () => void }) => {
+  // Trạng thái kiểm tra xem link ảnh có bị lỗi (broken) không
+  const [imgError, setImgError] = useState(!course.thumbnailUrl);
+  const style = getCourseStyles(course, index);
+  const Icon = style.Icon;
+
+  // Hàm quyết định render Ảnh hay Icon
+  const renderIconOrImage = (isWhiteText: boolean) => {
+    if (!imgError && course.thumbnailUrl) {
+      return (
+        <img 
+          src={course.thumbnailUrl} 
+          onError={() => setImgError(true)} 
+          alt={course.courseName} 
+          className="w-10 h-10 rounded-xl object-cover ring-1 ring-black/5 shrink-0 bg-white" 
+        />
+      );
+    }
+    return (
+      <div className={`w-10 h-10 rounded-xl ${isWhiteText ? 'bg-white/20 ring-1 ring-white/30' : style.bgClass} shrink-0 flex items-center justify-center transition`}>
+        <Icon className={`${isWhiteText ? 'text-white fill-white' : style.colorClass} w-4 h-4`} strokeWidth={1.5} />
+      </div>
+    );
+  };
+
+  if (isActive) {
+    return (
+      <div onClick={onClick} className={`group flex flex-col gap-3 p-4 rounded-2xl ${style.activeBg} cursor-pointer relative overflow-hidden shadow-lg shadow-black/10 hover:shadow-xl transition-shadow`}>
+        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+        <div className="flex items-center gap-3 relative z-10">
+          {renderIconOrImage(true)}
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <h3 className="text-sm font-bold text-white leading-tight truncate">{course.courseName}</h3>
+            <span className="text-xs font-medium text-white/80 truncate">{course.description || "Khóa học Dev Space"}</span>
+          </div>
+        </div>
+        <div className="flex flex-col gap-1.5 relative z-10">
+          <div className="flex justify-between text-xs font-bold text-white/90">
+            <span>Progress</span>
+            <span>Đang học</span>
+          </div>
+          <div className="w-full h-1.5 bg-white/20 rounded-full overflow-hidden">
+            <div className="w-[30%] h-full bg-white rounded-full shadow-sm animate-pulse" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div onClick={onClick} className="group flex flex-col gap-3 p-4 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all cursor-pointer">
+      <div className="flex items-center gap-3">
+        {renderIconOrImage(false)}
+        <div className="flex flex-col gap-0.5 min-w-0">
+          <h3 className="text-sm font-bold text-slate-700 group-hover:text-slate-900 transition leading-tight truncate">{course.courseName}</h3>
+          <span className="text-xs font-medium text-slate-400 truncate">{course.description || "Khóa học Dev Space"}</span>
+        </div>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <div className="flex justify-between text-xs font-bold text-slate-400">
+          <span>Progress</span>
+          <span>Chưa bắt đầu</span>
+        </div>
+        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div className="w-[0%] h-full bg-slate-300 rounded-full" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+// ==========================================
+// TRANG CHÍNH: MODULES IN COURSE PAGE
+// ==========================================
 export default function ModulesInCoursePage() {
   const [scrollPosition, setScrollPosition] = useState(0)
   
-  // State lưu trữ dữ liệu động từ API
+  // Dữ liệu Khóa học
+  const [myCourses, setMyCourses] = useState<DashboardCourse[]>([]);
+  const [activeCourseId, setActiveCourseId] = useState<string>("");
+
+  // Dữ liệu Modules của Khóa học đang chọn
   const [modules, setModules] = useState<ModuleResponse[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoadingModules, setIsLoadingModules] = useState<boolean>(false);
 
-  // ID khóa học dùng để test
-  const COURSE_ID = "course001";
-
+  // Lần đầu vào trang: Tải danh sách khóa học
   useEffect(() => {
+    getStudentCourses(STUDENT_ID).then(data => {
+      setMyCourses(data);
+      if (data.length > 0) {
+        // Tự động chọn khóa học đầu tiên làm mặc định
+        setActiveCourseId(data[0].id);
+      }
+    }).catch(err => console.error("Lỗi tải danh sách khóa học:", err));
+  }, []);
+
+  // Mỗi khi người dùng bấm chọn 1 Khóa học mới -> Gọi lại API tải Module của khóa đó
+  useEffect(() => {
+    if (!activeCourseId) return;
+
     const fetchModules = async () => {
+      setIsLoadingModules(true);
       try {
-        // 2. XÓA DÒNG NÀY (Hàm lấy tất cả)
-        // const data = await getAllModules(); 
-        
-        // 3. ĐỔI THÀNH DÒNG NÀY (Hàm lấy theo ID khóa học)
-        const data = await getModulesByCourseId(COURSE_ID);
-        
-        console.log("=== DỮ LIỆU NHẬN ĐƯỢC TỪ BACKEND ===", data);
+        const data = await getModulesByCourseId(activeCourseId);
         setModules(data); 
       } catch (error) {
         console.error("Lỗi khi fetch dữ liệu modules:", error);
       } finally {
-        setIsLoading(false); 
+        setIsLoadingModules(false); 
       }
     };
 
     fetchModules();
-  }, []);
+  }, [activeCourseId]);
 
   const handleScroll = (direction: 'left' | 'right') => {
     const container = document.getElementById('modules-scroll')
@@ -52,6 +181,12 @@ export default function ModulesInCoursePage() {
     }
   }
 
+  // Lấy ra khóa học đang được Active để đắp lên UI Hero Banner
+  const activeCourseData = myCourses.find(c => c.id === activeCourseId) || {
+    courseName: "Đang tải dữ liệu...",
+    description: "Vui lòng chờ trong giây lát..."
+  };
+
   return (
     <div className="flex flex-col h-screen w-full bg-slate-50 text-slate-900 font-sans antialiased overflow-hidden">
       
@@ -61,7 +196,7 @@ export default function ModulesInCoursePage() {
       {/* ── BOTTOM CONTAINER (SIDEBAR + MAIN CONTENT) ── */}
       <div className="flex flex-1 overflow-hidden">
         
-        {/* ── LEFT SIDEBAR (Dữ liệu giả theo yêu cầu) ── */}
+        {/* ── LEFT SIDEBAR (DỮ LIỆU ĐỘNG) ── */}
         <aside className="w-[280px] bg-white border-r border-slate-200 flex flex-col shrink-0 h-full z-20 shadow-sm">
 
           {/* Logo */}
@@ -83,78 +218,26 @@ export default function ModulesInCoursePage() {
           <div className="flex-1 overflow-y-auto">
             <div className="px-6 pt-6 pb-3 flex items-center justify-between">
               <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider">My Courses</h2>
-              <span className="bg-orange-50 text-orange-600 text-xs font-bold px-2 py-0.5 rounded-full border border-orange-100">3</span>
+              <span className="bg-orange-50 text-orange-600 text-xs font-bold px-2 py-0.5 rounded-full border border-orange-100">
+                {myCourses.length}
+              </span>
             </div>
 
             <div className="flex flex-col gap-2 px-3 pb-8">
-
-              {/* Course 1: ACTIVE */}
-              <div className="group flex flex-col gap-3 p-4 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 cursor-pointer relative overflow-hidden shadow-lg shadow-orange-500/20 hover:shadow-xl transition-shadow">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
-                <div className="flex items-center gap-3 relative z-10">
-                  <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm shrink-0 flex items-center justify-center ring-1 ring-white/30">
-                    <Zap className="text-white w-4 h-4 fill-white" strokeWidth={1.5} />
-                  </div>
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <h3 className="text-sm font-bold text-white leading-tight truncate">Advanced UI Engineering</h3>
-                    <span className="text-xs font-medium text-orange-100">Frontend Architecture</span>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1.5 relative z-10">
-                  <div className="flex justify-between text-xs font-bold text-orange-100">
-                    <span>Progress</span>
-                    <span>30%</span>
-                  </div>
-                  <div className="w-full h-1.5 bg-white/20 rounded-full overflow-hidden">
-                    <div className="w-[30%] h-full bg-white rounded-full shadow-sm" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Course 2: COMPLETED */}
-              <div className="group flex flex-col gap-3 p-4 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all cursor-pointer">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 shrink-0 flex items-center justify-center group-hover:bg-emerald-100 transition">
-                    <Layers className="text-emerald-500 w-4 h-4" strokeWidth={1.5} />
-                  </div>
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <h3 className="text-sm font-bold text-slate-700 group-hover:text-slate-900 transition leading-tight truncate">Fullstack Next.js Mastery</h3>
-                    <span className="text-xs font-medium text-slate-400">Web Development</span>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex justify-between text-xs font-bold text-slate-400">
-                    <span>Progress</span>
-                    <span className="text-emerald-500">100%</span>
-                  </div>
-                  <div className="w-full h-1.5 bg-emerald-50 rounded-full overflow-hidden">
-                    <div className="w-full h-full bg-emerald-500 rounded-full" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Course 3: NOT STARTED */}
-              <div className="group flex flex-col gap-3 p-4 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all cursor-pointer">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 shrink-0 flex items-center justify-center group-hover:bg-slate-200 transition">
-                    <Server className="text-slate-400 w-4 h-4 group-hover:text-slate-600 transition" strokeWidth={1.5} />
-                  </div>
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <h3 className="text-sm font-bold text-slate-700 group-hover:text-slate-900 transition leading-tight truncate">Microservices & Docker</h3>
-                    <span className="text-xs font-medium text-slate-400">DevOps & Cloud</span>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex justify-between text-xs font-bold text-slate-400">
-                    <span>Progress</span>
-                    <span>0%</span>
-                  </div>
-                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="w-0 h-full bg-slate-300 rounded-full" />
-                  </div>
-                </div>
-              </div>
-
+              {/* RENDER DANH SÁCH COURSE TỪ API */}
+              {myCourses.length === 0 ? (
+                 <div className="px-3 text-sm text-slate-400 text-center mt-4">Không có khóa học nào</div>
+              ) : (
+                myCourses.map((course, index) => (
+                  <SidebarCourseCard 
+                    key={course.id} 
+                    course={course} 
+                    index={index} 
+                    isActive={activeCourseId === course.id} 
+                    onClick={() => setActiveCourseId(course.id)} 
+                  />
+                ))
+              )}
             </div>
           </div>
         </aside>
@@ -170,7 +253,9 @@ export default function ModulesInCoursePage() {
                 <span className="hidden sm:inline">Dashboard</span>
               </span>
               <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-              <span className="text-slate-700 font-semibold truncate max-w-[180px] sm:max-w-none">Advanced UI Engineering</span>
+              <span className="text-slate-700 font-semibold truncate max-w-[180px] sm:max-w-none">
+                {activeCourseData.courseName}
+              </span>
             </div>
             <button className="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-orange-600 transition px-3 py-2 rounded-lg hover:bg-orange-50 border border-transparent hover:border-orange-200">
               <Grid3x3 className="w-4 h-4" />
@@ -181,8 +266,8 @@ export default function ModulesInCoursePage() {
           {/* Page content */}
           <div className="p-6 sm:p-8 flex flex-col gap-8 max-w-[1400px] w-full mx-auto">
 
-            {/* ── HERO BANNER ── */}
-            <section className="w-full bg-slate-900 rounded-3xl overflow-hidden shadow-2xl shadow-slate-900/30 relative">
+            {/* ── HERO BANNER (ĐỔI THEO KHÓA HỌC CHỌN) ── */}
+            <section className="w-full bg-slate-900 rounded-3xl overflow-hidden shadow-2xl shadow-slate-900/30 relative transition-all duration-500">
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(249,115,22,0.2),transparent_70%)]" />
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(249,115,22,0.08),transparent_60%)]" />
 
@@ -201,14 +286,14 @@ export default function ModulesInCoursePage() {
                   </div>
 
                   <div>
-                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight">
-                      Advanced UI<br />
-                      <span className="bg-gradient-to-r from-orange-400 to-orange-500 bg-clip-text text-transparent">Engineering</span>
+                    {/* Render tên khóa học to ở đây */}
+                    <h1 className="text-4xl sm:text-5xl lg:text-5xl font-black text-white tracking-tight leading-tight line-clamp-2">
+                      {activeCourseData.courseName}
                     </h1>
                   </div>
 
-                  <p className="text-base text-slate-300 max-w-xl leading-relaxed">
-                    Nắm vững kỹ thuật xây dựng kiến trúc Frontend mở rộng. Học cách thiết kế Component linh hoạt, quản lý State và tích hợp Design System.
+                  <p className="text-base text-slate-300 max-w-xl leading-relaxed line-clamp-3">
+                    {activeCourseData.description || "Nắm vững các kỹ thuật liên quan thông qua dự án thực tế. Quản lý trạng thái, tối ưu hiệu suất và chuẩn bị cho môi trường làm việc."}
                   </p>
 
                   <div className="flex flex-wrap items-center gap-6 pt-2">
@@ -276,25 +361,20 @@ export default function ModulesInCoursePage() {
 
               <div id="modules-scroll" className="flex gap-5 overflow-x-auto pt-4 pb-6 px-4 -mx-4 snap-x snap-mandatory scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 
-                {/* HIỂN THỊ DỮ LIỆU ĐỘNG */}
-                {isLoading ? (
+                {/* HIỂN THỊ DỮ LIỆU MODULE ĐỘNG */}
+                {isLoadingModules ? (
                   <div className="text-slate-500 font-medium px-4">Đang tải danh sách module...</div>
                 ) : modules.length === 0 ? (
                   <div className="text-slate-500 font-medium px-4">Chưa có module nào trong khóa học này.</div>
                 ) : (
                   modules.map((mod, index) => {
-                    // Cờ kiểm tra: Nếu là module đầu tiên thì In Progress, ngược lại là Locked
                     const isFirst = index === 0;
-                    
-                    // Format STT (01, 02, 03...)
                     const displayNumber = String(index + 1).padStart(2, '0');
 
                     if (isFirst) {
-                      // ── TEMPLATE IN PROGRESS (Dành cho Module Đầu) ──
                       return (
                         <div key={mod.id} className="w-[280px] sm:w-[300px] shrink-0 snap-start">
                           <div className="h-full bg-white rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden shadow-lg hover:shadow-xl shadow-orange-500/10 ring-2 ring-orange-500 hover:-translate-y-1 transition-all duration-300">
-                            {/* Decorative glow */}
                             <div className="absolute -top-16 -right-16 w-40 h-40 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
                             <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-orange-500/5 rounded-full blur-2xl pointer-events-none" />
 
@@ -329,7 +409,6 @@ export default function ModulesInCoursePage() {
                         </div>
                       );
                     } else {
-                      // ── TEMPLATE LOCKED (Dành cho các Module Còn Lại) ──
                       return (
                         <div key={mod.id} className="w-[280px] sm:w-[300px] shrink-0 snap-start group">
                           <div className="h-full bg-white border border-slate-200 rounded-2xl p-6 flex flex-col gap-4 shadow-sm hover:shadow-md hover:border-slate-300 opacity-60 group-hover:opacity-75 transition-all duration-300 cursor-not-allowed">
