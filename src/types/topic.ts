@@ -1,11 +1,35 @@
-import type {LessonSummary} from "./lesson.ts";
+export type LessonType =
+    | "READING"
+    | "LECTURE"
+    | "PRACTICE"
+    | string;
+
+
+export interface Lesson {
+    id: string;
+    lessonName: string;
+    type: LessonType;
+    meta?: string;
+}
 
 export interface TopicSummary {
-    id: string;
+    id?: string;
+    topicId?: string;
     topicName: string;
 }
 
-export interface TopicWithLessons extends TopicSummary {
-    courseName?: string; // Backend chưa expose field này, tạm optional
-    lessons: LessonSummary[];
+export interface TopicWithLessons {
+    id?: string;
+    topicId?: string;
+
+    topicName: string;
+
+    lessons: Lesson[];
+}
+
+
+export interface CourseDocument {
+    id: string;
+    documentName: string;
+    url: string;
 }
