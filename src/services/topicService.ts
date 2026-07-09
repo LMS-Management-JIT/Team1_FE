@@ -65,14 +65,14 @@ function normalizeLesson(raw: unknown, index: number): Lesson {
     };
 }
 
-function normalizeTopic(raw: unknown, index: number): TopicWithLessons {
+function normalizeTopic(raw: unknown): TopicWithLessons {
     const topic = raw as Partial<TopicWithLessons> & Record<string, unknown>;
     const rawLessons = asArray<Lesson>((topic.lessons ?? topic.items ?? topic.children) as unknown);
 
     return {
         id: topic.id ? String(topic.id) : undefined,
         topicId: topic.topicId ? String(topic.topicId) : (topic.id ? String(topic.id) : undefined),
-        topicName: String(topic.topicName ?? topic.name ?? topic.title ?? `Topic ${index + 1}`),
+        topicName: String(topic.topicName ?? topic.name ?? topic.title ?? "Chương"),
         lessons: rawLessons.map((lesson, lessonIndex) => normalizeLesson(lesson, lessonIndex)),
     };
 }
@@ -106,5 +106,5 @@ export async function getTopicsByModule(moduleId: string): Promise<TopicWithLess
         `${API_BASE_URL}/topics/${moduleId}`,
     ]);
 
-    return asArray<TopicWithLessons>(data).map((topic, index) => normalizeTopic(topic, index));
+    return asArray<TopicWithLessons>(data).map(normalizeTopic);
 }
