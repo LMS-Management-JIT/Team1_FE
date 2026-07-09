@@ -1,5 +1,5 @@
 import {apiClient} from "./apiClient";
-import type {TopicSummary, TopicWithLessons} from "../types/topic.ts";
+import type {TopicSummary, TopicWithLessons} from "../types/topicLesson.ts";
 import type {LessonSummary} from "../types/lesson.ts";
 
 export async function getTopicDetail(topicId: string): Promise<TopicWithLessons> {

@@ -36,6 +36,7 @@ export function LessonSidebar({
                                   onSelectLesson,
                               }: LessonSidebarProps) {
     const safeLessons = lessons ?? [];
+    const sortedLessons = [...safeLessons].sort((a, b) => a.lessonOrder - b.lessonOrder);
     const completedCount = safeLessons.filter((l) => completedLessonIds.has(l.id)).length;
     const progressPercent = safeLessons.length
         ? Math.round((completedCount / safeLessons.length) * 100)
@@ -58,7 +59,7 @@ export function LessonSidebar({
             </div>
 
             <ul className="sidebar-scroll flex flex-col gap-1 overflow-y-auto pr-1 lg:min-h-0 lg:flex-1">
-                {safeLessons.map((lesson) => {
+                {sortedLessons.map((lesson) => {
                     const isActive = lesson.id === currentLessonId;
                     const isCompleted = completedLessonIds.has(lesson.id);
                     const meta = getLessonMeta(lesson);
