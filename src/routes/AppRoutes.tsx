@@ -1,19 +1,28 @@
-import { Routes, Route } from "react-router-dom";
+import {Route, Routes} from "react-router-dom";
 import DashboardUserPage from "../feature/dashboard-user/DashboardUserPage";
 import ModulesInCoursePage from "../feature/modules-in-course/ModulesInCoursePage";
+import {LessonDetailPage} from "../feature/lesson/pages/LessonDetailPage";
 
 export const AppRoutes = () => {
-  return (
-    <Routes>
-      {/* Đường dẫn mặc định (Trang chủ Dashboard) */}
-      <Route path="/" element={<DashboardUserPage />} />
-      
-      {/* Đường dẫn chi tiết Module của một Khóa học */}
-      <Route path="/courses/:courseId/modules" element={<ModulesInCoursePage />} />
-      
-      {/* Bạn có thể dễ dàng thêm các Route khác ở đây sau này */}
-      {/* <Route path="/profile" element={<ProfilePage />} /> */}
-      {/* <Route path="*" element={<NotFoundPage />} /> */}
-    </Routes>
-  );
+    return (
+        <Routes>
+            {/* Trang Dashboard */}
+            <Route path="/" element={<DashboardUserPage/>}/>
+
+            {/* Danh sách module của khóa học */}
+            <Route
+                path="/courses/:courseId/modules"
+                element={<ModulesInCoursePage/>}
+            />
+
+            {/* Trang chi tiết bài học */}
+            <Route
+                path="/courses/:courseId/modules/:moduleId/topics/:topicId/lessons/:lessonId"
+                element={<LessonDetailPage/>}
+            />
+
+            {/* 404 */}
+            {/* <Route path="*" element={<NotFoundPage />} /> */}
+        </Routes>
+    );
 };
