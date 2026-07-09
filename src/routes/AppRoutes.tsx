@@ -17,7 +17,7 @@ export const AppRoutes = () => {
 
             {/* Trang chi tiết bài học */}
             <Route
-                path="/courses/:courseId/modules/:moduleId/topics/:topicId/lessons/:lessonId"
+                path="topics/:topicId/lessons/:lessonId"
                 element={<LessonDetailPage/>}
             />
 
