@@ -3,7 +3,7 @@ import DashboardUserPage from "../feature/dashboard-user/DashboardUserPage";
 import ModulesInCoursePage from "../feature/modules-in-course/ModulesInCoursePage";
 import {LessonDetailPage} from "../feature/lesson/pages/LessonDetailPage";
 import ListTopicPage from "../feature/Topic/ListTopicPage.tsx";
-
+import ContactTeacherPage from "../feature/contact-teacher/ContactTeacherPage";
 export const AppRoutes = () => {
     return (
         <Routes>
@@ -23,6 +23,9 @@ export const AppRoutes = () => {
             />
             <Route path="/topics/:moduleId" element={<ListTopicPage/>}/>
             <Route path="/topics" element={<Navigate to="/topics/1" replace/>}/>
+
+            {/* Trang chat với giảng viên — THÊM DÒNG NÀY */}
+            <Route path="/contact-teacher" element={<ContactTeacherPage/>}/>
             {/* 404 */}
             {/* <Route path="*" element={<NotFoundPage />} /> */}
         </Routes>

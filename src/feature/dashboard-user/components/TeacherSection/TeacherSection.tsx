@@ -1,4 +1,5 @@
 import { MessageCircle, UserRound } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import type { DashboardTeacher } from "../../../../types/dashboard";
 
 interface TeacherSectionProps {
@@ -14,6 +15,7 @@ export function TeacherSection({
                                    error,
                                    onViewProfile,
                                }: TeacherSectionProps) {
+    const navigate = useNavigate();
     if (loading) return <section className="mt-8">Đang tải giảng viên...</section>;
 
     if (error) return <section className="mt-8 rounded-xl bg-white p-5">{error}</section>;
@@ -59,7 +61,7 @@ export function TeacherSection({
 
                             <button
                                 type="button"
-                                onClick={() => alert(`Chat với ${teacher.fullName}`)}
+                                onClick={() => navigate(`/contact-teacher?teacherId=${teacher.id}`)}
                                 className="flex h-9 w-[150px] items-center justify-center gap-2 rounded-md bg-white text-sm font-bold text-[#ff6b13]"
                             >
                                 <MessageCircle size={15} />

@@ -1,8 +1,44 @@
 import {Bell, Flag, Menu, Search} from "lucide-react";
-import {useState} from "react";
+import {useEffect, useState} from "react";
+import {useLocation, useNavigate} from "react-router-dom";
+import {getStudentCourses} from "../../services/dashboardService";
+import type {DashboardCourse} from "../../types/dashboard";
+
+const STUDENT_ID = "F6nosEpzCBMUBZeAyHCM"; // TODO: dùng chung 1 nguồn với DashboardUserPage khi có auth thật
 
 export function Header() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [courses, setCourses] = useState<DashboardCourse[]>([]);
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    useEffect(() => {
+        getStudentCourses(STUDENT_ID)
+            .then(setCourses)
+            .catch(() => setCourses([]));
+    }, []);
+
+    const isHome = location.pathname === "/";
+    const isCoursePage = location.pathname.startsWith("/courses") || location.pathname.startsWith("/topics");
+    const isContactPage = location.pathname.startsWith("/contact-teacher");
+
+    const goToHome = () => navigate("/");
+
+    const goToRandomCourse = () => {
+        if (courses.length === 0) {
+            navigate("/");
+            return;
+        }
+        const randomCourse = courses[Math.floor(Math.random() * courses.length)];
+        navigate(`/courses/${randomCourse.id}/modules`);
+    };
+
+    const goToContactTeacher = () => {
+        navigate("/contact-teacher");
+    };
+
+    const navItemClass = (active: boolean) =>
+        `rounded-lg px-4 py-2 text-sm ${active ? "bg-white/20" : "hover:bg-white/20"}`;
 
     return (
         <header className="relative bg-[#ff6b13] px-4 text-white sm:px-6 lg:px-8">
@@ -16,15 +52,15 @@ export function Header() {
 
                 {/* Nav — ẩn trên mobile/tablet, hiện từ lg trở lên */}
                 <nav className="hidden items-center gap-4 lg:absolute lg:left-1/2 lg:flex lg:-translate-x-1/2">
-                    <a className="rounded-lg bg-white/20 px-4 py-2 text-sm" href="#">
+                    <button type="button" onClick={goToHome} className={navItemClass(isHome)}>
                         Trang chủ
-                    </a>
-                    <a className="rounded-lg px-4 py-2 text-sm hover:bg-white/20" href="#">
+                    </button>
+                    <button type="button" onClick={goToRandomCourse} className={navItemClass(isCoursePage)}>
                         Khóa học
-                    </a>
-                    <a className="rounded-lg px-4 py-2 text-sm hover:bg-white/20" href="#">
+                    </button>
+                    <button type="button" onClick={goToContactTeacher} className={navItemClass(isContactPage)}>
                         Liên hệ
-                    </a>
+                    </button>
                 </nav>
 
                 <div className="ml-auto flex items-center gap-2 sm:gap-3">
@@ -69,15 +105,15 @@ export function Header() {
             {/* Menu sổ xuống trên mobile/tablet */}
             {mobileMenuOpen && (
                 <nav className="flex flex-col gap-1 border-t border-white/20 pb-3 pt-2 lg:hidden">
-                    <a className="rounded-lg bg-white/20 px-4 py-2 text-sm" href="#">
+                    <button type="button" onClick={goToHome} className={`text-left ${navItemClass(isHome)}`}>
                         Trang chủ
-                    </a>
-                    <a className="rounded-lg px-4 py-2 text-sm hover:bg-white/20" href="#">
+                    </button>
+                    <button type="button" onClick={goToRandomCourse} className={`text-left ${navItemClass(isCoursePage)}`}>
                         Khóa học
-                    </a>
-                    <a className="rounded-lg px-4 py-2 text-sm hover:bg-white/20" href="#">
+                    </button>
+                    <button type="button" onClick={goToContactTeacher} className={`text-left ${navItemClass(isContactPage)}`}>
                         Liên hệ
-                    </a>
+                    </button>
                     <div className="mt-1 flex h-8 items-center gap-2 rounded-full bg-white/20 px-3 md:hidden">
                         <Search size={15}/>
                         <input
