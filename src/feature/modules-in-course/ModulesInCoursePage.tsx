@@ -6,7 +6,7 @@ import type {ModuleResponse} from "../../types/module";
 import type {DashboardCourse} from "../../types/dashboard";
 import {getModulesByCourseId} from "../../services/moduleService";
 import {getStudentCourses} from "../../services/dashboardService";
-import {useParams} from 'react-router-dom';
+import {useNavigate, useParams} from 'react-router-dom';
 
 const STUDENT_ID = "F6nosEpzCBMUBZeAyHCM"; // ID dùng chung với trang Dashboard
 
@@ -156,6 +156,7 @@ const SidebarCourseCard = ({course, index, isActive, onClick}: {
 export default function ModulesInCoursePage() {
     // 2. ĐỌC courseId TỪ THANH URL
     const {courseId} = useParams<{ courseId: string }>();
+    const navigate = useNavigate();
 
     // const [scrollPosition, setScrollPosition] = useState(0)
     const [myCourses, setMyCourses] = useState<DashboardCourse[]>([]);
@@ -444,7 +445,8 @@ export default function ModulesInCoursePage() {
                                         if (isFirst) {
                                             return (
                                                 <div key={mod.id}
-                                                     className="w-[280px] sm:w-[300px] shrink-0 snap-start">
+                                                     onClick={() => navigate(`/topics/${mod.id}`)}
+                                                     className="w-[280px] sm:w-[300px] shrink-0 snap-start cursor-pointer">
                                                     <div
                                                         className="h-full bg-white rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden shadow-lg hover:shadow-xl shadow-orange-500/10 ring-2 ring-orange-500 hover:-translate-y-1 transition-all duration-300">
                                                         <div
@@ -482,6 +484,7 @@ export default function ModulesInCoursePage() {
                                                                     className="w-[45%] h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full"/>
                                                             </div>
                                                             <button
+                                                                onClick={() => navigate(`/topics/${mod.id}`)}
                                                                 className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg transition flex items-center justify-center gap-2">
                                                                 <Play className="w-3 h-3 fill-current"/>
                                                                 Continue Learning

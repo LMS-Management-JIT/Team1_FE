@@ -1,4 +1,5 @@
-import {BookOpen, CheckCircle2, Code2, PlayCircle,} from "lucide-react";
+import {BookOpen, CheckCircle2, ChevronLeft, Code2, PlayCircle,} from "lucide-react";
+import {Link} from "react-router-dom";
 import clsx from "clsx";
 import type {LessonSummary} from "../../../types/lesson.ts";
 
@@ -8,6 +9,7 @@ interface LessonSidebarProps {
     currentLessonId: string;
     completedLessonIds: Set<string>;
     onSelectLesson: (lessonId: string) => void;
+    backToTopicsHref?: string;
 }
 
 const iconMap = {
@@ -34,6 +36,7 @@ export function LessonSidebar({
                                   currentLessonId,
                                   completedLessonIds,
                                   onSelectLesson,
+                                  backToTopicsHref,
                               }: LessonSidebarProps) {
     const safeLessons = lessons ?? [];
     const sortedLessons = [...safeLessons].sort((a, b) => a.lessonOrder - b.lessonOrder);
@@ -46,6 +49,15 @@ export function LessonSidebar({
         <aside
             className="flex w-full shrink-0 flex-col rounded-xl border border-gray-100 bg-white p-5 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:w-80">
             <div className="shrink-0">
+                {backToTopicsHref && (
+                    <Link
+                        to={backToTopicsHref}
+                        className="mb-3 inline-flex items-center gap-1 text-xs font-medium text-gray-400 transition-colors hover:text-orange-500"
+                    >
+                        <ChevronLeft className="h-3.5 w-3.5"/>
+                        Quay lại danh sách chương
+                    </Link>
+                )}
                 <h3 className="font-semibold text-gray-900">{topicName}</h3>
                 <p className="mb-2 text-xs text-gray-400">
                     {completedCount}/{safeLessons.length} bài học hoàn thành
