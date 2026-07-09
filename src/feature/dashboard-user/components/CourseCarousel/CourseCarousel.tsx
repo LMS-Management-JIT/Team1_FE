@@ -1,5 +1,6 @@
 import type { DashboardCourse } from "../../../../types/dashboard";
 import { getImageUrl } from "../../../../utils/image";
+import { useNavigate } from "react-router-dom";
 
 interface CourseCarouselProps {
     courses: DashboardCourse[];
@@ -20,6 +21,7 @@ export function CourseCarousel({
                                    loading = false,
                                    error,
                                }: CourseCarouselProps) {
+    const navigate = useNavigate(); // THÊM KHỞI TẠO HOOK ĐIỀU HƯỚNG
     if (loading) return <section className="py-8">Đang tải khóa học...</section>;
 
     if (error) {
@@ -35,22 +37,25 @@ export function CourseCarousel({
     }
 
     return (
-        <section className="mb-10">
-            <div className="grid grid-cols-3 gap-5">
-                {courses.map((course, index) => {
-                    const thumbnail = getImageUrl(course.thumbnailUrl);
-                    const hasImage = Boolean(course.thumbnailUrl);
+    <section className="mb-10">
+      <div className="grid grid-cols-3 gap-5">
+        {courses.map((course, index) => {
+          const thumbnail = getImageUrl(course.thumbnailUrl);
+          const hasImage = Boolean(course.thumbnailUrl);
 
-                    return (
-                        <article
-                            key={course.id}
-                            className="overflow-hidden rounded-xl bg-white shadow-[0_16px_35px_rgba(0,0,0,0.12)]"
-                        >
-                            <div
-                                className={`relative flex h-[155px] items-center justify-center bg-gradient-to-br ${
-                                    gradients[index % gradients.length]
-                                }`}
-                            >
+          return (
+                <article
+                key={course.id}
+                // THÊM SỰ KIỆN CLICK VÀO ĐÂY:
+                onClick={() => navigate(`/courses/${course.id}/modules`)} 
+                // THÊM cursor-pointer VÀ hover:scale-105 ĐỂ TẠO HIỆU ỨNG KHI TRỎ CHUỘT
+                className="overflow-hidden rounded-xl bg-white shadow-[0_16px_35px_rgba(0,0,0,0.12)] cursor-pointer hover:scale-105 hover:shadow-xl transition-all duration-300" 
+                >
+              <div
+                className={`relative flex h-[155px] items-center justify-center bg-gradient-to-br ${
+                  gradients[index % gradients.length]
+                }`}
+              >
                 <span className="absolute left-4 top-4 rounded-full bg-white px-3 py-1 text-xs font-bold text-gray-600">
                   {course.courseName}
                 </span>
