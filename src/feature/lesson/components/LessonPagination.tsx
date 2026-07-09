@@ -32,8 +32,8 @@ export function LessonPagination({
     };
 
     return (
-        <div className="mt-6 flex items-center justify-between text-sm">
-            <div className="flex items-center gap-1">
+        <div className="mt-6 flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-1">
                 <button onClick={() => goTo(currentIndex - 1)} className="rounded p-1.5 hover:bg-gray-100">
                     <ChevronLeft className="h-4 w-4"/>
                 </button>
@@ -56,7 +56,7 @@ export function LessonPagination({
                 </button>
             </div>
 
-            <div className="flex items-center gap-2 text-gray-400">
+            <div className="flex flex-wrap items-center gap-2 text-gray-400">
         <span>
           Trang {currentIndex + 1} / {sorted.length}
         </span>

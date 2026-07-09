@@ -1,4 +1,6 @@
 import {useNavigate, useParams} from "react-router-dom";
+import {useState} from "react";
+import {Sparkles} from "lucide-react";
 import {useLessonDetail} from "../../../hooks/useLessonDetail";
 import {useTopicDetail} from "../../../hooks/useTopicDetail";
 import {useStudentProgress, useSubmitProgress,} from "../../../hooks/useLessonProgress";
@@ -32,6 +34,8 @@ export function LessonDetailPage() {
         isPending: isSubmitting,
     } = useSubmitProgress(studentId, lesson?.id);
 
+    const [showSummary, setShowSummary] = useState(true);
+
     if (isLessonLoading || isTopicLoading || !lesson || !topic) {
         return (
             <div className="flex min-h-screen items-center justify-center">
@@ -63,23 +67,38 @@ export function LessonDetailPage() {
     };
 
     return (
-        <>
+        <div className="flex min-h-screen flex-col bg-white">
             <Header/>
-            <div className="mx-auto max-w-7xl px-6 py-8">
+            <div className="mx-auto w-full max-w-7xl flex-1 px-4 pt-6 pb-4 sm:px-6 sm:pt-8 lg:px-6">
                 <LessonBreadcrumb
                     courseName={topic.courseName ?? ""}
                     topicName={topic.topicName}
                     lessonName={lesson.lessonName}
                 />
 
-                <h1 className="mb-6 text-2xl font-bold text-gray-900">
-                    {lesson.lessonName}
-                </h1>
+                <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">
+                        {lesson.lessonName}
+                    </h1>
 
-                <div className="flex gap-6">
-                    <div className="flex-1">
+                    {lesson.type === "LECTURE" && (
+                        <button
+                            type="button"
+                            onClick={() => setShowSummary((prev) => !prev)}
+                            className="flex w-fit items-center gap-1.5 rounded-lg border border-orange-500 px-4 py-2 text-sm font-medium text-orange-500 hover:bg-orange-50"
+                        >
+                            <Sparkles className="h-3.5 w-3.5"/>
+                            {showSummary ? "Ẩn tóm tắt" : "Tóm tắt bởi AI"}
+                        </button>
+                    )}
+                </div>
+
+                <div className="flex flex-col gap-6 lg:flex-row">
+                    <div className="min-w-0 flex-1">
                         {lesson.type === "READING" && <ReadingContent lesson={lesson}/>}
-                        {lesson.type === "LECTURE" && <LectureContent lesson={lesson}/>}
+                        {lesson.type === "LECTURE" && (
+                            <LectureContent lesson={lesson} showSummary={showSummary}/>
+                        )}
                         {lesson.type === "PRACTICE" && (
                             <PracticeContent
                                 lesson={lesson}
@@ -104,6 +123,6 @@ export function LessonDetailPage() {
                     />
                 </div>
             </div>
-        </>
+        </div>
     );
 }

@@ -1,12 +1,17 @@
-import {PlayCircle} from "lucide-react";
+import {PlayCircle, Sparkles} from "lucide-react";
 import type {Lesson} from "../../../types/lesson.ts";
 import {SafeHtmlContent} from "../../../components/lesson/common/SafeHtmlContent";
+import {highlightTimestamps} from "../../../utils/highlightTimestamps";
+import {formatDuration} from "../../../utils/formatDuration";
 
 interface LectureContentProps {
     lesson: Lesson;
+    showSummary: boolean;
 }
 
-export function LectureContent({lesson}: LectureContentProps) {
+export function LectureContent({lesson, showSummary}: LectureContentProps) {
+    const enhancedContent = highlightTimestamps(lesson.content);
+
     return (
         <div className="flex flex-col gap-4">
             <div
@@ -18,10 +23,32 @@ export function LectureContent({lesson}: LectureContentProps) {
                 )}
             </div>
 
-            <div className="rounded-xl border border-orange-100 bg-orange-50/60 p-5">
-                <p className="mb-2 text-sm font-semibold text-orange-600">✨ Tóm tắt bài giảng</p>
-                <SafeHtmlContent html={lesson.content} fallback="Chưa có tóm tắt cho bài giảng này."/>
-            </div>
+            {showSummary && (
+                <div className="rounded-xl border border-orange-200 bg-white p-5">
+                    <div className="mb-3 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-sm font-semibold text-orange-600">
+                            <Sparkles className="h-4 w-4"/>
+                            Tóm tắt bởi AI
+                        </div>
+                        {lesson.duration != null && (
+                            <span
+                                className="rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-medium text-orange-500">
+                                {formatDuration(lesson.duration)} video
+                            </span>
+                        )}
+                    </div>
+
+                    <SafeHtmlContent
+                        html={enhancedContent}
+                        fallback="Chưa có tóm tắt cho bài giảng này."
+                    />
+
+                    <p className="mt-4 flex items-start gap-1.5 text-xs text-orange-500">
+                        <span>⚠️</span>
+                        Nội dung do AI tạo tự động, có thể chưa chính xác hoàn toàn.
+                    </p>
+                </div>
+            )}
         </div>
     );
 }
