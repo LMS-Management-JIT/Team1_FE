@@ -3,6 +3,7 @@ import {useState} from "react";
 import {Sparkles} from "lucide-react";
 import {useLessonDetail} from "../../../hooks/useLessonDetail";
 import {useTopicDetail} from "../../../hooks/useTopicDetail";
+import {useModuleIdForTopic} from "../../../hooks/useModuleIdForTopic";
 import {useStudentProgress, useSubmitProgress,} from "../../../hooks/useLessonProgress";
 import {buildLessonDetailPath} from "../../../constants/routes";
 import {LessonBreadcrumb} from "../components/LessonBreadcrumb.tsx";
@@ -22,6 +23,8 @@ export function LessonDetailPage() {
     // Tất cả hook phải gọi KHÔNG điều kiện, trước mọi early return
     const {data: lesson, isLoading: isLessonLoading} = useLessonDetail(lessonId);
     const {data: topic, isLoading: isTopicLoading} = useTopicDetail(topicId);
+    const {data: moduleId} = useModuleIdForTopic(topicId);
+    const topicsListHref = moduleId ? `/topics/${moduleId}` : undefined;
     //const {data: progressList} = useStudentProgress(studentId);
     const {data: progressList = []} = useStudentProgress(studentId);
     console.log("LESSON:", lesson);
@@ -74,6 +77,7 @@ export function LessonDetailPage() {
                     courseName={topic.courseName ?? ""}
                     topicName={topic.topicName}
                     lessonName={lesson.lessonName}
+                    topicHref={topicsListHref}
                 />
 
                 <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -120,6 +124,7 @@ export function LessonDetailPage() {
                         currentLessonId={lesson.id}
                         completedLessonIds={completedLessonIds}
                         onSelectLesson={handleSelectLesson}
+                        backToTopicsHref={topicsListHref}
                     />
                 </div>
             </div>

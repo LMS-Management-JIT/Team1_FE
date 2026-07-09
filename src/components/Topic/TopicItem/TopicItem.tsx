@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { AlignJustify, ChevronDown } from "lucide-react";
-import type { TopicWithLessons } from "../../../types/topic.ts";
-import { LessonRow } from "../LessonRow/LessonRow.tsx";
+import {useState} from "react";
+import {AlignJustify, ChevronDown} from "lucide-react";
+import type {TopicWithLessons} from "../../../types/topic.ts";
+import {LessonRow} from "../LessonRow/LessonRow.tsx";
 
-export function TopicItem({ topic, defaultOpen = false }: { topic: TopicWithLessons; defaultOpen?: boolean }) {
+export function TopicItem({topic, defaultOpen = false}: { topic: TopicWithLessons; defaultOpen?: boolean }) {
     const [open, setOpen] = useState(defaultOpen);
 
     return (
@@ -20,12 +20,15 @@ export function TopicItem({ topic, defaultOpen = false }: { topic: TopicWithLess
                 }`}
             >
                 <span className="topic-item__main">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 ring-1 ring-slate-200">
-                        <AlignJustify size={19} />
+                    <span
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 ring-1 ring-slate-200">
+                        <AlignJustify size={19}/>
                     </span>
                     <span className="min-w-0">
-                        <span className="block truncate text-base font-semibold leading-6 text-slate-900">{topic.topicName}</span>
-                        <span className="mt-0.5 block text-sm leading-5 text-slate-500">{topic.lessons.length} bài học</span>
+                        <span
+                            className="block truncate text-base font-semibold leading-6 text-slate-900">{topic.topicName}</span>
+                        <span
+                            className="mt-0.5 block text-sm leading-5 text-slate-500">{topic.lessons.length} bài học</span>
                     </span>
                 </span>
 
@@ -38,7 +41,7 @@ export function TopicItem({ topic, defaultOpen = false }: { topic: TopicWithLess
             {open && topic.lessons.length > 0 && (
                 <div className="topic-item__content">
                     {topic.lessons.map((lesson) => (
-                        <LessonRow key={lesson.id} lesson={lesson} />
+                        <LessonRow key={lesson.id} lesson={lesson} topicId={topic.id ?? topic.topicId ?? ""}/>
                     ))}
                 </div>
             )}
