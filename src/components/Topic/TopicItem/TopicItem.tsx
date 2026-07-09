@@ -44,4 +44,5 @@ export function TopicItem({ topic, defaultOpen = false }: { topic: TopicWithLess
             )}
         </article>
     );
+
 }

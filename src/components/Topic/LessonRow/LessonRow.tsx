@@ -45,4 +45,5 @@ export function LessonRow({ lesson }: { lesson: Lesson }) {
             <ArrowRight size={16} className="shrink-0 text-slate-400" />
         </div>
     );
+
 }

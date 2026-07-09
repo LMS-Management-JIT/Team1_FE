@@ -27,7 +27,6 @@ export interface TopicWithLessons {
   lessons: Lesson[];
 }
 
-
 export interface CourseDocument {
   id: string;
   documentName: string;

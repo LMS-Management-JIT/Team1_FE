@@ -145,5 +145,6 @@ export async function getCourseDocuments(courseId?: string): Promise<CourseDocum
             url: String(doc.url ?? doc.fileUrl ?? ""),
         } as CourseDocument;
     });
+
 }
 

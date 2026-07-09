@@ -158,6 +158,7 @@
     }
 }
 
+
 @media (max-width: 640px) {
     .topic-page__main {
         width: min(100% - 28px, 1240px);

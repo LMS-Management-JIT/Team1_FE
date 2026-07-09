@@ -65,4 +65,5 @@ export function CourseDocuments({ documents, courseId }: { documents?: CourseDoc
             </ul>
         </div>
     );
+
 }
