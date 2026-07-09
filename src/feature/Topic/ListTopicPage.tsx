@@ -69,7 +69,7 @@ export default function ListTopicPage() {
                                 <FileText size={24} />
                                 <h2>Tài liệu khóa học</h2>
                             </div>
-                            <CourseDocuments />
+                            <CourseDocuments courseId={moduleId} />
                         </section>
 
                         {/* 3. Section Danh sách Topic chứa Lesson lồng nhau bốc từ bảng trung gian Backend */}

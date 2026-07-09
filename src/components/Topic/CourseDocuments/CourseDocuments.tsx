@@ -1,7 +1,7 @@
 import { ArrowUpRight, FileText } from "lucide-react";
 import type { CourseDocument } from "../../../types/topic";
 import { useEffect, useState } from "react";
-import { getCourseDocuments } from "../../../services/topicService";
+import { getCourseDocuments } from "../../../services/documentService";
 
 export function CourseDocuments({ documents, courseId }: { documents?: CourseDocument[]; courseId?: string }) {
     const [docs, setDocs] = useState<CourseDocument[] | null>(documents ?? null);
