@@ -12,7 +12,7 @@ interface LessonSidebarProps {
 
 function getLessonMeta(lesson: LessonSummary) {
     if (lesson.type === "READING") return {label: "Bài đọc", unit: "phút"};
-    if (lesson.type === "LECTURE") return {label: "Đọc • Video • Thực hành", unit: "phút"};
+    if (lesson.type === "LECTURE") return {label: "Bài giảng", unit: "phút"};
     return {label: "Thực hành", unit: "câu"};
 }
 

@@ -1,113 +1,158 @@
-import type {KeyboardEvent} from "react";
-import {useState} from "react";
+import {useEffect, useState} from "react";
+import {ChevronLeft, ChevronRight} from "lucide-react";
+import type {LessonSummary} from "../../../types/lesson";
 
-interface PaginationProps {
-    currentPage: number;
-    totalPages: number;
-    onPageChange: (page: number) => void;
+interface LessonPaginationProps {
+    lessons: LessonSummary[] | undefined | null;
+    currentLessonId: string;
+    onSelectLesson: (lessonId: string) => void;
 }
 
-/**
- * Thanh phân trang dùng chung.
- * Sự kiện: bấm số trang | bấm mũi tên ‹ › | nhập số + Enter hoặc bấm "Đi".
- */
-export default function Pagination({currentPage, totalPages, onPageChange}: PaginationProps) {
-    const [jumpValue, setJumpValue] = useState('');
+export function LessonPagination({
+                                     lessons,
+                                     currentLessonId,
+                                     onSelectLesson,
+                                 }: LessonPaginationProps) {
+    const [jumpPageInput, setJumpPageInput] = useState("");
 
-    const clamp = (p: number) => Math.min(Math.max(p, 1), totalPages);
+    const safeLessons = lessons ?? [];
 
-    const handleJump = () => {
-        const val = parseInt(jumpValue, 10);
-        if (!isNaN(val)) {
-            onPageChange(clamp(val));
-            setJumpValue('');
+    const sorted = [...safeLessons].sort(
+        (a, b) => a.lessonOrder - b.lessonOrder
+    );
+
+    const currentIndex = sorted.findIndex(
+        (lesson) => lesson.id === currentLessonId
+    );
+
+    const currentPage = currentIndex + 1;
+    const totalPages = sorted.length;
+
+    useEffect(() => {
+        setJumpPageInput("");
+    }, [currentLessonId]);
+
+    const goToPage = (page: number) => {
+        if (page < 1 || page > totalPages) return;
+        onSelectLesson(sorted[page - 1].id);
+    };
+
+    const handleJumpPage = (
+        e: React.KeyboardEvent<HTMLInputElement>
+    ) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+
+            const pageNumber = parseInt(jumpPageInput, 10);
+
+            if (
+                !isNaN(pageNumber) &&
+                pageNumber >= 1 &&
+                pageNumber <= totalPages
+            ) {
+                goToPage(pageNumber);
+            } else {
+                alert(`Vui lòng nhập trang từ 1 đến ${totalPages}`);
+            }
         }
     };
 
-    const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') handleJump();
+    const getPaginationGroup = () => {
+        const delta = 1;
+        const range: (number | string)[] = [];
+        const rangeWithDots: (number | string)[] = [];
+        let last: number | undefined;
+
+        for (let i = 1; i <= totalPages; i++) {
+            if (
+                i === 1 ||
+                i === totalPages ||
+                (i >= currentPage - delta &&
+                    i <= currentPage + delta)
+            ) {
+                range.push(i);
+            }
+        }
+
+        for (const i of range) {
+            if (last !== undefined) {
+                if ((i as number) - last === 2) {
+                    rangeWithDots.push(last + 1);
+                } else if ((i as number) - last !== 1) {
+                    rangeWithDots.push("...");
+                }
+            }
+
+            rangeWithDots.push(i);
+            last = i as number;
+        }
+
+        return rangeWithDots;
     };
 
-    const visiblePages: number[] = [];
-    for (let p = 1; p <= Math.min(4, totalPages); p++) visiblePages.push(p);
-    const showEllipsis = totalPages > 5;
+    if (totalPages <= 0) return null;
 
     return (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-6 py-4">
-            {/* ── Dãy số trang ── */}
-            <div className="flex items-center gap-1.5">
+        <div className="flex items-center justify-center gap-12 pt-6 pb-2 mt-2">
+            <div className="flex items-center gap-2">
                 <button
-                    onClick={() => onPageChange(clamp(currentPage - 1))}
-                    disabled={currentPage <= 1}
-                    className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200
-                     text-gray-500 hover:border-orange-500 shadow-md hover:text-orange-500 hover:bg-orange-50
-                     disabled:cursor-not-allowed disabled:opacity-40 transition"
+                    onClick={() => goToPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 transition-colors bg-white"
                 >
-                    ‹
+                    <ChevronLeft size={16}/>
                 </button>
 
-                {visiblePages.map((p) => (
+                {getPaginationGroup().map((item, index) => (
                     <button
-                        key={p}
-                        onClick={() => onPageChange(p)}
-                        className={`flex h-10 w-10 items-center justify-center rounded-lg text-xs font-bold transition
-              ${p === currentPage
-                            ? 'bg-orange-500 text-white shadow-md'
-                            : 'border border-gray-200 text-gray-500 hover:border-orange-500  hover:text-orange-500 hover:bg-orange-50'
+                        key={index}
+                        onClick={() =>
+                            typeof item === "number" &&
+                            goToPage(item)
+                        }
+                        disabled={item === "..."}
+                        className={`w-9 h-9 flex items-center justify-center rounded-lg border font-medium transition-colors ${
+                            item === currentPage
+                                ? "bg-orange-500 text-white border-orange-500 shadow-sm"
+                                : item === "..."
+                                    ? "border-transparent text-gray-500 cursor-default bg-transparent"
+                                    : "border-gray-200 text-gray-600 hover:bg-gray-50 bg-white"
                         }`}
                     >
-                        {p}
+                        {item}
                     </button>
                 ))}
 
-                {showEllipsis && (
-                    <>
-                        <span className="px-1 text-xs text-gray-400">…</span>
-                        <button
-                            onClick={() => onPageChange(totalPages)}
-                            className={`flex h-10 w-10 items-center justify-center rounded-lg text-xs font-bold transition
-                ${totalPages === currentPage
-                                ? 'bg-orange-500 text-white shadow'
-                                : 'border border-gray-200 text-gray-500 hover:border-orange-500 hover:text-orange-500 hover:bg-orange-50'
-                            }`}
-                        >
-                            {totalPages}
-                        </button>
-                    </>
-                )}
-
                 <button
-                    onClick={() => onPageChange(clamp(currentPage + 1))}
-                    disabled={currentPage >= totalPages}
-                    className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200
-                     text-gray-500 hover:border-orange-500 shadow-md hover:text-orange-500 hover:bg-orange-50
-                     disabled:cursor-not-allowed disabled:opacity-40 transition"
+                    onClick={() => goToPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 transition-colors bg-white"
                 >
-                    ›
+                    <ChevronRight size={16}/>
                 </button>
             </div>
 
-            {/* ── Ô nhập số trang ── */}
-            <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">Trang {currentPage} / {totalPages}</span>
-                <span className="text-xs text-gray-400">Đến trang:</span>
-                <input
-                    type="number"
-                    min={1}
-                    max={totalPages}
-                    value={jumpValue}
-                    onChange={(e) => setJumpValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="VD: 5"
-                    className="h-8 w-20 rounded-lg border border-gray-200 text-center font-mono text-sm
-                     outline-none focus:border-orange-500  focus:ring-1 focus:ring-orange-200 transition"
-                />
-                <button
-                    onClick={handleJump}
-                    className="h-8 rounded-lg bg-orange-500 px-3 text-xs font-semibold text-white hover:bg-orange-600 transition"
-                >
-                    Đi
-                </button>
+            <div className="flex items-center gap-4 text-sm text-gray-500 font-medium">
+                <span>
+                    Trang {currentPage} / {totalPages}
+                </span>
+
+                <div className="flex items-center gap-2">
+                    <span>Đến trang:</span>
+
+                    <input
+                        type="text"
+                        value={jumpPageInput}
+                        onChange={(e) =>
+                            setJumpPageInput(
+                                e.target.value.replace(/[^0-9]/g, "")
+                            )
+                        }
+                        onKeyDown={handleJumpPage}
+                        placeholder="VD: 5"
+                        className="w-16 px-2 py-1.5 border border-gray-300 rounded-lg outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-center text-gray-700 transition-shadow"
+                    />
+                </div>
             </div>
         </div>
     );
