@@ -9,6 +9,7 @@ import type { ModuleResponse } from "../../types/module";
 import type { DashboardCourse } from "../../types/dashboard";
 import { getModulesByCourseId } from "../../services/moduleService";
 import { getStudentCourses } from "../../services/dashboardService";
+import { useParams } from 'react-router-dom';
 
 const STUDENT_ID = "F6nosEpzCBMUBZeAyHCM"; // ID dùng chung với trang Dashboard
 
@@ -130,9 +131,10 @@ const SidebarCourseCard = ({ course, index, isActive, onClick }: { course: Dashb
 // TRANG CHÍNH: MODULES IN COURSE PAGE
 // ==========================================
 export default function ModulesInCoursePage() {
-  const [scrollPosition, setScrollPosition] = useState(0)
+  // 2. ĐỌC courseId TỪ THANH URL
+  const { courseId } = useParams<{ courseId: string }>(); 
   
-  // Dữ liệu Khóa học
+  const [scrollPosition, setScrollPosition] = useState(0)
   const [myCourses, setMyCourses] = useState<DashboardCourse[]>([]);
   const [activeCourseId, setActiveCourseId] = useState<string>("");
 
@@ -145,11 +147,12 @@ export default function ModulesInCoursePage() {
     getStudentCourses(STUDENT_ID).then(data => {
       setMyCourses(data);
       if (data.length > 0) {
-        // Tự động chọn khóa học đầu tiên làm mặc định
-        setActiveCourseId(data[0].id);
+        // KIỂM TRA: Nếu trên URL có courseId thì ưu tiên chọn nó, nếu không thì chọn khóa đầu tiên trong danh sách
+        const selectedId = courseId || data[0].id;
+        setActiveCourseId(selectedId);
       }
     }).catch(err => console.error("Lỗi tải danh sách khóa học:", err));
-  }, []);
+  }, [courseId]); // Thêm courseId vào dependency array
 
   // Mỗi khi người dùng bấm chọn 1 Khóa học mới -> Gọi lại API tải Module của khóa đó
   useEffect(() => {
