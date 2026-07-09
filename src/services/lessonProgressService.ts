@@ -1,4 +1,4 @@
-import {apiClient} from "./axiosClient";
+import {apiClient} from "./apiClient";
 import type {LessonProgress, LessonProgressRequest} from "../types/lessonProgress.ts";
 
 // export async function getProgressByStudent(studentId: string): Promise<LessonProgress[]> {

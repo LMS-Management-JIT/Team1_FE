@@ -1,4 +1,4 @@
-import {apiClient} from "./axiosClient";
+import {apiClient} from "./apiClient";
 import type {Lesson} from "../types/lesson.ts";
 
 export async function getLessonById(lessonId: string): Promise<Lesson> {
