@@ -1,4 +1,4 @@
-import type { TopicWithLessons, Lesson, LessonType } from "../types/topic";
+import type { TopicWithLessons, Lesson, LessonType, CourseDocument } from "../types/topic";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080/api").replace(/\/$/, "");
 
@@ -108,3 +108,42 @@ export async function getTopicsByModule(moduleId: string): Promise<TopicWithLess
 
     return asArray<TopicWithLessons>(data).map(normalizeTopic);
 }
+
+
+/**
+ * Lấy danh sách tài liệu khóa học (CourseDocument)
+ * @param courseId (optional) ID của khóa học để lọc tài liệu
+ * @returns Promise<CourseDocument[]>
+ *
+ * API endpoint candidates tried (in order):
+ * - {API_BASE_URL}/documents
+ * - {API_BASE_URL}/course-documents
+ * - {API_BASE_URL}/documents?courseId={courseId}
+ * - {API_BASE_URL}/courses/{courseId}/documents
+ */
+export async function getCourseDocuments(courseId?: string): Promise<CourseDocument[]> {
+    const urls = [
+        `${API_BASE_URL}/documents`,
+        `${API_BASE_URL}/course-documents`,
+    ];
+
+    if (courseId) {
+        urls.push(`${API_BASE_URL}/documents?courseId=${encodeURIComponent(courseId)}`);
+        urls.push(`${API_BASE_URL}/courses/${encodeURIComponent(courseId)}/documents`);
+    }
+
+    const data = await fetchJson<CourseDocument[] | ApiListEnvelope<CourseDocument>>(urls);
+
+    const raw = asArray<CourseDocument>(data);
+
+    // Normalize minimal fields
+    return raw.map((d, idx) => {
+        const doc = d as Partial<CourseDocument> & Record<string, unknown>;
+        return {
+            id: String(doc.id ?? doc.documentId ?? `doc-${idx}`),
+            documentName: String(doc.documentName ?? doc.name ?? doc.title ?? `Document ${idx + 1}`),
+            url: String(doc.url ?? doc.fileUrl ?? ""),
+        } as CourseDocument;
+    });
+}
+

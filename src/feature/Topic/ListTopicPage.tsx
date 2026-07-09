@@ -5,7 +5,7 @@ import { Header } from "../../layouts/Header/Header";
 import { CourseDocuments } from "../../components/Topic/CourseDocuments/CourseDocuments";
 import { TopicItem } from "../../components/Topic/TopicItem/TopicItem";
 import { getTopicsByModule } from "../../services/topicService";
-import type { TopicWithLessons, CourseDocument } from "../../types/topic";
+import type { TopicWithLessons } from "../../types/topic";
 import "./ListTopicPage.css";
 
 const moduleTitles: Record<string, string> = {
@@ -18,10 +18,7 @@ export default function ListTopicPage() {
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
-    // dữ liệu giả lập bảng documents
-    const [documents] = useState<CourseDocument[]>([
-        { id: "doc_01", documentName: "Figma_Design_Guidelines.pdf" , url: "https://example.com/docs/Figma_Design_Guidelines.pdf" },
-    ]);
+    // Previously used mock documents; now CourseDocuments will fetch from backend directly when no `documents` prop is provided.
 
     useEffect(() => {
         let active = true;
@@ -72,7 +69,7 @@ export default function ListTopicPage() {
                                 <FileText size={24} />
                                 <h2>Tài liệu khóa học</h2>
                             </div>
-                            <CourseDocuments documents={documents} />
+                            <CourseDocuments />
                         </section>
 
                         {/* 3. Section Danh sách Topic chứa Lesson lồng nhau bốc từ bảng trung gian Backend */}
