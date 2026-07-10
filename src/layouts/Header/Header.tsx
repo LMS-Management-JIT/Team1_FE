@@ -1,30 +1,62 @@
 import {Bell, Flag, Menu, Search} from "lucide-react";
-import {useState} from "react";
+import {useEffect, useState} from "react";
+import {Link, useLocation} from "react-router-dom";
+import clsx from "clsx";
+import {getStudentCourses} from "../../services/dashboardService";
+import logo from "../../assets/codegym_logo.jpg";
+
+// Dùng chung 1 học viên demo — đồng bộ với STUDENT_ID trong DashboardUserPage.tsx
+const STUDENT_ID = "F6nosEpzCBMUBZeAyHCM";
 
 export function Header() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [homeCourseId, setHomeCourseId] = useState<string | null>(null);
+    const location = useLocation();
+
+    useEffect(() => {
+        getStudentCourses(STUDENT_ID)
+            .then((courses) => {
+                if (courses.length > 0) setHomeCourseId(courses[0].id);
+            })
+            .catch(() => setHomeCourseId(null));
+    }, []);
+
+    // "Khóa học" cần courseId để vào đúng trang Modules — trong lúc chưa tải xong
+    // hoặc học viên chưa có khóa học nào, tạm trỏ về Dashboard để không bị link chết.
+    const coursesHref = homeCourseId ? `/courses/${homeCourseId}/modules` : "/";
+
+    const navItems = [
+        {label: "Trang chủ", to: "/", isActive: location.pathname === "/"},
+        {
+            label: "Khóa học",
+            to: coursesHref,
+            isActive: location.pathname.startsWith("/courses") || location.pathname.startsWith("/topics"),
+        },
+        {label: "Liên hệ", to: "/", isActive: false},
+    ];
 
     return (
         <header className="relative bg-[#ff6b13] px-4 text-white sm:px-6 lg:px-8">
             <div className="flex h-14 items-center gap-4 lg:gap-12">
-                <div className="flex shrink-0 items-center gap-3 font-bold">
-                    <div className="grid h-9 w-9 place-items-center rounded-md bg-[#1f3f95] font-extrabold">
-                        L
-                    </div>
-                    <span className="hidden sm:inline">codegym</span>
-                </div>
+                <Link to="/" className="flex shrink-0 items-center gap-3 font-bold">
+                    <img src={logo} alt="CodeGym" className="h-9 w-9 rounded-md object-contain"/>
+                    <span className="hidden sm:inline">Codegym</span>
+                </Link>
 
                 {/* Nav — ẩn trên mobile/tablet, hiện từ lg trở lên */}
                 <nav className="hidden items-center gap-4 lg:absolute lg:left-1/2 lg:flex lg:-translate-x-1/2">
-                    <a className="rounded-lg bg-white/20 px-4 py-2 text-sm" href="#">
-                        Trang chủ
-                    </a>
-                    <a className="rounded-lg px-4 py-2 text-sm hover:bg-white/20" href="#">
-                        Khóa học
-                    </a>
-                    <a className="rounded-lg px-4 py-2 text-sm hover:bg-white/20" href="#">
-                        Liên hệ
-                    </a>
+                    {navItems.map((item) => (
+                        <Link
+                            key={item.label}
+                            to={item.to}
+                            className={clsx(
+                                "rounded-lg px-4 py-2 text-sm transition-colors",
+                                item.isActive ? "bg-white/20" : "hover:bg-white/20"
+                            )}
+                        >
+                            {item.label}
+                        </Link>
+                    ))}
                 </nav>
 
                 <div className="ml-auto flex items-center gap-2 sm:gap-3">
@@ -69,15 +101,19 @@ export function Header() {
             {/* Menu sổ xuống trên mobile/tablet */}
             {mobileMenuOpen && (
                 <nav className="flex flex-col gap-1 border-t border-white/20 pb-3 pt-2 lg:hidden">
-                    <a className="rounded-lg bg-white/20 px-4 py-2 text-sm" href="#">
-                        Trang chủ
-                    </a>
-                    <a className="rounded-lg px-4 py-2 text-sm hover:bg-white/20" href="#">
-                        Khóa học
-                    </a>
-                    <a className="rounded-lg px-4 py-2 text-sm hover:bg-white/20" href="#">
-                        Liên hệ
-                    </a>
+                    {navItems.map((item) => (
+                        <Link
+                            key={item.label}
+                            to={item.to}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={clsx(
+                                "rounded-lg px-4 py-2 text-sm transition-colors",
+                                item.isActive ? "bg-white/20" : "hover:bg-white/20"
+                            )}
+                        >
+                            {item.label}
+                        </Link>
+                    ))}
                     <div className="mt-1 flex h-8 items-center gap-2 rounded-full bg-white/20 px-3 md:hidden">
                         <Search size={15}/>
                         <input

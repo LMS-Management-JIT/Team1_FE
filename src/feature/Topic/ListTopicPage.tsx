@@ -5,20 +5,16 @@ import {Header} from "../../layouts/Header/Header";
 import {CourseDocuments} from "../../components/Topic/CourseDocuments/CourseDocuments";
 import {TopicItem} from "../../components/Topic/TopicItem/TopicItem";
 import {getTopicsByModule} from "../../services/topicService";
+import {getModuleById} from "../../services/moduleService";
 import type {TopicWithLessons} from "../../types/topic";
 import "./ListTopicPage.css";
-
-const moduleTitles: Record<string, string> = {
-    "1": "Module 1: Figma UI Architecture",
-};
 
 export default function ListTopicPage() {
     const {moduleId = "1"} = useParams();
     const [topics, setTopics] = useState<TopicWithLessons[]>([]);
+    const [moduleName, setModuleName] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
-
-    // Previously used mock documents; now CourseDocuments will fetch from backend directly when no `documents` prop is provided.
 
     useEffect(() => {
         let active = true;
@@ -38,12 +34,24 @@ export default function ListTopicPage() {
                 setLoading(false);
             });
 
+        // Lấy tên module thật từ Backend thay vì dùng bảng ánh xạ cứng theo ID
+        getModuleById(moduleId)
+            .then((mod) => {
+                if (!active) return;
+                setModuleName(mod.moduleName);
+            })
+            .catch(() => {
+                if (!active) return;
+                setModuleName(null);
+            });
+
         return () => {
             active = false;
         };
     }, [moduleId]);
 
-    const currentModuleTitle = moduleTitles[moduleId] ?? `Module ${moduleId}`;
+    // Trong lúc chưa tải xong / hoặc lỗi, tạm hiện "Module {id}" để không để trống hẳn
+    const currentModuleTitle = moduleName ?? `Module ${moduleId}`;
 
     return (
         <div className="topic-page">
