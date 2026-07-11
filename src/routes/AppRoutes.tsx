@@ -8,7 +8,8 @@ export const AppRoutes = () => {
     return (
         <Routes>
             {/* Trang Dashboard */}
-            <Route path="/" element={<DashboardUserPage/>}/>
+            <Route path="/" element={<Navigate to="/dashboard" replace/>}/>
+            <Route path="/dashboard" element={<DashboardUserPage/>}/>
 
             {/* Danh sách module của khóa học */}
             <Route

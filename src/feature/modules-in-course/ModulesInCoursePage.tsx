@@ -8,7 +8,7 @@ import {getModulesByCourseId} from "../../services/moduleService";
 import {getStudentCourses} from "../../services/dashboardService";
 import {useNavigate, useParams} from 'react-router-dom';
 
-const STUDENT_ID = "F6nosEpzCBMUBZeAyHCM"; // ID dùng chung với trang Dashboard
+const STUDENT_ID = "CqUc2q8I1oObbXRpGwtN"; // ID dùng chung với trang Dashboard
 
 // 1. LOGIC TÍNH TOÁN ICON THÔNG MINH THEO TỪ KHÓA
 const getCourseStyles = (course: DashboardCourse, index: number) => {
