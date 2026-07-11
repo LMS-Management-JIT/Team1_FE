@@ -1,21 +1,13 @@
-import { useEffect, useState } from "react";
-import { Header } from "../../layouts/Header/Header";
-import {
-    getStudentCourses,
-    getStudentCourseProgress,
-    getAllTeachers,
-} from "../../services/dashboardService";
-import type {
-    DashboardCourse,
-    DashboardCourseProgress,
-    DashboardTeacher,
-} from "../../types/dashboard";
-import { CourseCarousel } from "./components/CourseCarousel/CourseCarousel";
-import { ProgressSection } from "./components/ProgressSection/ProgressSection";
-import { TeacherSection } from "./components/TeacherSection/TeacherSection";
-import { TeacherProfileModal } from "./components/TeacherProfileModal/TeacherProfileModal";
+import {useEffect, useState} from "react";
+import {Header} from "../../layouts/Header/Header";
+import {getAllTeachers, getStudentCourseProgress, getStudentCourses,} from "../../services/dashboardService";
+import type {DashboardCourse, DashboardCourseProgress, DashboardTeacher,} from "../../types/dashboard";
+import {CourseCarousel} from "./components/CourseCarousel/CourseCarousel";
+import {ProgressSection} from "./components/ProgressSection/ProgressSection";
+import {TeacherSection} from "./components/TeacherSection/TeacherSection";
+import {TeacherProfileModal} from "./components/TeacherProfileModal/TeacherProfileModal";
 
-const STUDENT_ID = "F6nosEpzCBMUBZeAyHCM";
+const STUDENT_ID = "CqUc2q8I1oObbXRpGwtN";
 
 export default function DashboardUserPage() {
     const [courses, setCourses] = useState<DashboardCourse[]>([]);
@@ -52,7 +44,7 @@ export default function DashboardUserPage() {
 
     return (
         <div className="min-h-screen bg-[#f3f3f3]">
-            <Header />
+            <Header/>
 
             <main className="mx-auto max-w-[1100px] px-6 py-8">
                 <CourseCarousel

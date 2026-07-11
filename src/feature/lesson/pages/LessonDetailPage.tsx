@@ -18,7 +18,7 @@ import {Loading} from "../../../components/lesson/ui/Loading";
 export function LessonDetailPage() {
     const {topicId, lessonId} = useParams<{ topicId: string; lessonId: string }>();
     const navigate = useNavigate();
-    const studentId = "2lGFI5u4Z4cItCwGArjS";
+    const studentId = "CqUc2q8I1oObbXRpGwtN";
 
     // Tất cả hook phải gọi KHÔNG điều kiện, trước mọi early return
     const {data: lesson, isLoading: isLessonLoading} = useLessonDetail(lessonId);
@@ -37,7 +37,7 @@ export function LessonDetailPage() {
         isPending: isSubmitting,
     } = useSubmitProgress(studentId, lesson?.id);
 
-    const [showSummary, setShowSummary] = useState(true);
+    const [showSummary, setShowSummary] = useState(false);
 
     if (isLessonLoading || isTopicLoading || !lesson || !topic) {
         return (
@@ -59,13 +59,19 @@ export function LessonDetailPage() {
         navigate(buildLessonDetailPath(topic.id, nextLessonId));
     };
 
-    const handleSubmitPractice = (code: string) => {
+    const handleSubmitPractice = (file: File) => {
+        // ⚠️ Backend hiện chưa có endpoint lưu trữ file bài nộp (LessonProgressRequest
+        // không có field chứa file/URL). Tạm thời chỉ đánh dấu hoàn thành tiến độ;
+        // file người dùng chọn CHƯA được lưu lại ở đâu cả — cần bổ sung Firebase Storage
+        // hoặc 1 API upload riêng ở Backend để lưu thật file này.
+        console.log("File bài nộp đã chọn (chưa được lưu lên server):", file.name, file.size);
+
         submitProgress({
             studentId,
             lessonId: lesson.id,
             progress: 100,
             completed: true,
-            lastPosition: code.length,
+            lastPosition: 0,
         });
     };
 

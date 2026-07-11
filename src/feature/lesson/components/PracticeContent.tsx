@@ -1,12 +1,12 @@
 import {useState} from "react";
 import clsx from "clsx";
 import type {Lesson} from "../../../types/lesson.ts";
-import {CodeEditorPanel} from "./CodeEditorPanel.tsx";
+import {FileSubmissionPanel} from "./FileSubmissionPanel.tsx";
 import {SafeHtmlContent} from "../../../components/lesson/common/SafeHtmlContent";
 
 interface PracticeContentProps {
     lesson: Lesson;
-    onSubmit: (code: string) => void;
+    onSubmit: (file: File) => void;
     isSubmitting: boolean;
 }
 
@@ -40,12 +40,9 @@ export function PracticeContent({lesson, onSubmit, isSubmitting}: PracticeConten
             </div>
 
             {tab === "assignment" ? (
-                // ⚠️ Đổi từ lesson.description -> lesson.content (đề bài dạng HTML đầy đủ)
                 <SafeHtmlContent html={lesson.content} fallback="Đề bài đang được cập nhật."/>
             ) : (
-                <CodeEditorPanel
-                    initialCode={lesson.starterCode ?? ""}
-                    language={lesson.language ?? "text"}
+                <FileSubmissionPanel
                     onSubmit={onSubmit}
                     isSubmitting={isSubmitting}
                 />

@@ -1,6 +1,4 @@
-import {useEffect, useState} from "react";
 import {ChevronLeft, ChevronRight} from "lucide-react";
-import clsx from "clsx";
 import type {LessonSummary} from "../../../types/lesson";
 
 interface LessonPaginationProps {
@@ -14,102 +12,34 @@ export function LessonPagination({
                                      currentLessonId,
                                      onSelectLesson,
                                  }: LessonPaginationProps) {
-    const [jumpValue, setJumpValue] = useState("");
-
     const safeLessons = lessons ?? [];
-    const sorted = [...safeLessons].sort(
-        (a, b) => a.lessonOrder - b.lessonOrder
-    );
-
-    const currentIndex = sorted.findIndex(
-        (lesson) => lesson.id === currentLessonId
-    );
-
-    useEffect(() => {
-        setJumpValue("");
-    }, [currentLessonId]);
-
-    const goTo = (index: number) => {
-        if (index < 0 || index >= sorted.length) return;
-        onSelectLesson(sorted[index].id);
-    };
-
-    const handleJump = () => {
-        const targetOrder = Number(jumpValue);
-
-        const target = sorted.find(
-            (lesson) => lesson.lessonOrder === targetOrder
-        );
-
-        if (target) {
-            onSelectLesson(target.id);
-        }
-
-        setJumpValue("");
-    };
+    const sorted = [...safeLessons].sort((a, b) => a.lessonOrder - b.lessonOrder);
+    const currentIndex = sorted.findIndex((lesson) => lesson.id === currentLessonId);
 
     if (!sorted.length) return null;
 
+    const previousLesson = currentIndex > 0 ? sorted[currentIndex - 1] : null;
+    const nextLesson = currentIndex < sorted.length - 1 ? sorted[currentIndex + 1] : null;
+
     return (
-        <div
-            className="mt-8 flex flex-col items-center justify-between gap-6 border-t border-gray-100 pt-6 lg:flex-row">
-            <div className="flex items-center gap-2">
-                <button
-                    onClick={() => goTo(currentIndex - 1)}
-                    disabled={currentIndex === 0}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                    <ChevronLeft size={16}/>
-                </button>
+        <div className="mt-8 flex items-center justify-between gap-4 border-t border-gray-100 pt-6">
+            <button
+                onClick={() => previousLesson && onSelectLesson(previousLesson.id)}
+                disabled={!previousLesson}
+                className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+                <ChevronLeft size={16}/>
+                Bài trước
+            </button>
 
-                {sorted.map((lesson, index) => (
-                    <button
-                        key={lesson.id}
-                        onClick={() => goTo(index)}
-                        className={clsx(
-                            "flex h-9 w-9 items-center justify-center rounded-lg border text-sm font-medium transition-colors",
-                            lesson.id === currentLessonId
-                                ? "border-orange-500 bg-orange-500 text-white shadow-sm"
-                                : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
-                        )}
-                    >
-                        {lesson.lessonOrder}
-                    </button>
-                ))}
-
-                <button
-                    onClick={() => goTo(currentIndex + 1)}
-                    disabled={currentIndex === sorted.length - 1}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                    <ChevronRight size={16}/>
-                </button>
-            </div>
-
-            <div className="flex items-center gap-4 text-sm font-medium text-gray-500">
-                <span>
-                    Trang {currentIndex + 1} / {sorted.length}
-                </span>
-
-                <div className="flex items-center gap-2">
-                    <span>Đến trang:</span>
-
-                    <input
-                        type="text"
-                        value={jumpValue}
-                        onChange={(e) =>
-                            setJumpValue(
-                                e.target.value.replace(/[^0-9]/g, "")
-                            )
-                        }
-                        onKeyDown={(e) =>
-                            e.key === "Enter" && handleJump()
-                        }
-                        placeholder="VD: 5"
-                        className="w-16 rounded-lg border border-gray-300 px-2 py-1.5 text-center text-sm text-gray-700 outline-none transition-all focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-                    />
-                </div>
-            </div>
+            <button
+                onClick={() => nextLesson && onSelectLesson(nextLesson.id)}
+                disabled={!nextLesson}
+                className="flex items-center gap-1.5 rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+                Bài tiếp theo
+                <ChevronRight size={16}/>
+            </button>
         </div>
     );
 }
