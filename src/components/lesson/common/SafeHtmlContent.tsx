@@ -53,10 +53,23 @@ export function SafeHtmlContent({
         <div
             ref={containerRef}
             className={clsx(
-                "prose prose-sm max-w-none text-gray-700",
-                "prose-headings:font-semibold prose-headings:text-gray-900",
-                "prose-code:rounded prose-code:bg-gray-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-orange-600",
-                "prose-pre:rounded-xl prose-pre:bg-[#1e1e1e] prose-pre:p-0",
+                "max-w-none text-[15px] leading-7 text-gray-700",
+                // Style heading trực tiếp bằng selector con, KHÔNG phụ thuộc plugin @tailwindcss/typography
+                "[&_h1]:mt-6 [&_h1]:mb-3 [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-gray-900",
+                "[&_h2]:mt-6 [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-gray-900",
+                "[&_h3]:mt-5 [&_h3]:mb-2 [&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-orange-600",
+                "[&_h4]:mt-4 [&_h4]:mb-2 [&_h4]:text-base [&_h4]:font-semibold [&_h4]:text-gray-900",
+                "[&_p]:mb-3",
+                "[&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-6",
+                "[&_ol]:mb-3 [&_ol]:list-decimal [&_ol]:pl-6",
+                "[&_li]:mb-1",
+                "[&_a]:text-orange-600 [&_a]:underline",
+                "[&_strong]:font-semibold [&_strong]:text-gray-900",
+                "[&_blockquote]:border-l-4 [&_blockquote]:border-orange-300 [&_blockquote]:bg-orange-50 [&_blockquote]:px-4 [&_blockquote]:py-2 [&_blockquote]:text-gray-600",
+                // Chỉ style code inline (không nằm trong <pre>) — tránh đè màu cú pháp của highlight.js
+                "[&_:not(pre)>code]:rounded [&_:not(pre)>code]:bg-gray-100 [&_:not(pre)>code]:px-1.5 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:text-orange-600 [&_:not(pre)>code]:font-mono [&_:not(pre)>code]:text-[13px]",
+                // Khối <pre> giữ p-0: để class "hljs" (do highlight.js gắn) tự set padding/màu nền theo theme vs2015.css, tránh double padding
+                "[&_pre]:mb-4 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-[#1e1e1e] [&_pre]:p-0",
                 className
             )}
             // eslint-disable-next-line react/no-danger -- html đã qua DOMPurify.sanitize ở trên

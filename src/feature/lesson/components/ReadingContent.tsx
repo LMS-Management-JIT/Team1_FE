@@ -1,5 +1,6 @@
 import type {Lesson} from "../../../types/lesson.ts";
 import {SafeHtmlContent} from "../../../components/lesson/common/SafeHtmlContent";
+import {autoFormatHeadings} from "../../../utils/autoFormatHeadings";
 
 interface ReadingContentProps {
     lesson: Lesson;
@@ -11,7 +12,7 @@ export function ReadingContent({lesson}: ReadingContentProps) {
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-orange-500">
                 Bài {lesson.lessonOrder} · Tài liệu đọc
             </p>
-            <SafeHtmlContent html={lesson.content}/>
+            <SafeHtmlContent html={autoFormatHeadings(lesson.content)}/>
         </div>
     );
 }
