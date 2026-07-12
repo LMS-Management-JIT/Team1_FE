@@ -3,6 +3,7 @@ import clsx from "clsx";
 import type {Lesson} from "../../../types/lesson.ts";
 import {FileSubmissionPanel} from "./FileSubmissionPanel.tsx";
 import {SafeHtmlContent} from "../../../components/lesson/common/SafeHtmlContent";
+import {autoFormatHeadings} from "../../../utils/autoFormatHeadings";
 
 interface PracticeContentProps {
     lesson: Lesson;
@@ -40,7 +41,7 @@ export function PracticeContent({lesson, onSubmit, isSubmitting}: PracticeConten
             </div>
 
             {tab === "assignment" ? (
-                <SafeHtmlContent html={lesson.content} fallback="Đề bài đang được cập nhật."/>
+                <SafeHtmlContent html={autoFormatHeadings(lesson.content)} fallback="Đề bài đang được cập nhật."/>
             ) : (
                 <FileSubmissionPanel
                     onSubmit={onSubmit}
