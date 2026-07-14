@@ -14,7 +14,7 @@ interface PracticeContentProps {
 type Tab = "assignment" | "submission";
 
 export function PracticeContent({lesson, onSubmit, isSubmitting}: PracticeContentProps) {
-    const [tab, setTab] = useState<Tab>("submission");
+    const [tab, setTab] = useState<Tab>("assignment");
 
     return (
         <div className="rounded-xl border border-gray-100 bg-white p-6">
