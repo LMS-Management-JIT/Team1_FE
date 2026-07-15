@@ -143,13 +143,24 @@ export function LessonDetailPage() {
                         {lesson.type === "PRACTICE" && (
                             <PracticeContent
                                 lesson={lesson}
+                                studentId={studentId}
                                 existingSubmission={existingSubmission}
                                 onSubmit={handleSubmitPractice}
                                 onDeleteSubmission={handleDeleteSubmission}
                                 isSubmitting={isUploadingFile || isSubmittingProgress}
                                 isDeleting={isDeletingSubmission}
+                                onQuizSubmitted={(result) => {
+                                    submitProgress({
+                                        studentId,
+                                        lessonId: lesson.id,
+                                        progress: Math.round(result.scorePercent),
+                                        completed: true,
+                                        lastPosition: 0,
+                                    });
+                                }}
                             />
                         )}
+
                         <LessonPagination
                             lessons={topic.lessons}
                             currentLessonId={lesson.id}

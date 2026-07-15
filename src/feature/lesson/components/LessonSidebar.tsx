@@ -1,4 +1,4 @@
-import {BookOpen, Check, ChevronLeft, Code2, PlayCircle} from "lucide-react";
+import {BookOpen, Check, ChevronLeft, Code2, HelpCircle, PlayCircle} from "lucide-react";
 import {Link} from "react-router-dom";
 import clsx from "clsx";
 import type {LessonSummary} from "../../../types/lesson.ts";
@@ -17,11 +17,13 @@ const typeIconMap = {
     READING: BookOpen,
     LECTURE: PlayCircle,
     PRACTICE: Code2,
+    QUIZ: HelpCircle,
 };
 
 function getLessonMeta(lesson: LessonSummary) {
     if (lesson.type === "READING") return {label: "Bài đọc", unit: "phút"};
     if (lesson.type === "LECTURE") return {label: "Bài giảng", unit: "phút"};
+    if (lesson.type === "QUIZ") return {label: "Kiểm tra", unit: "câu"};
     return {label: "Thực hành", unit: "câu"};
 }
 

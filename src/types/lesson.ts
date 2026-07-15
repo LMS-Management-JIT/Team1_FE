@@ -1,4 +1,4 @@
-export type LessonType = "READING" | "LECTURE" | "PRACTICE";
+export type LessonType = "READING" | "LECTURE" | "PRACTICE" | "QUIZ";
 
 export interface Lesson {
     id: string;

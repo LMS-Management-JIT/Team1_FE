@@ -4,25 +4,31 @@ import type {Lesson} from "../../../types/lesson.ts";
 import {FileSubmissionPanel} from "./FileSubmissionPanel.tsx";
 import {SafeHtmlContent} from "../../../components/lesson/common/SafeHtmlContent";
 import type {LessonSubmissionResponse} from "../../../services/lessonSubmissionService";
+import {QuizContent} from "./QuizContent.tsx";
+import type {QuizSubmissionResult} from "../../../types/quiz";
 
 interface PracticeContentProps {
     lesson: Lesson;
+    studentId: string;
     existingSubmission: LessonSubmissionResponse | null | undefined;
     onSubmit: (file: File) => void;
     onDeleteSubmission: () => void;
     isSubmitting: boolean;
     isDeleting: boolean;
+    onQuizSubmitted?: (result: QuizSubmissionResult) => void;
 }
 
-type Tab = "assignment" | "submission";
+type Tab = "assignment" | "submission" | "quiz";
 
 export function PracticeContent({
                                     lesson,
+                                    studentId,
                                     existingSubmission,
                                     onSubmit,
                                     onDeleteSubmission,
                                     isSubmitting,
                                     isDeleting,
+                                    onQuizSubmitted,
                                 }: PracticeContentProps) {
     const [tab, setTab] = useState<Tab>("assignment");
 
@@ -33,6 +39,7 @@ export function PracticeContent({
                     [
                         {key: "assignment", label: "Đề bài"},
                         {key: "submission", label: "Bài nộp của tôi"},
+                        {key: "quiz", label: "Quiz"},
                     ] as const
                 ).map((item) => (
                     <button
@@ -50,15 +57,25 @@ export function PracticeContent({
                 ))}
             </div>
 
-            {tab === "assignment" ? (
+            {tab === "assignment" && (
                 <SafeHtmlContent html={lesson.content} fallback="Đề bài đang được cập nhật."/>
-            ) : (
+            )}
+
+            {tab === "submission" && (
                 <FileSubmissionPanel
                     existingSubmission={existingSubmission}
                     onSubmit={onSubmit}
                     onDelete={onDeleteSubmission}
                     isSubmitting={isSubmitting}
                     isDeleting={isDeleting}
+                />
+            )}
+
+            {tab === "quiz" && (
+                <QuizContent
+                    lessonId={lesson.id}
+                    studentId={studentId}
+                    onSubmitted={onQuizSubmitted}
                 />
             )}
         </div>
