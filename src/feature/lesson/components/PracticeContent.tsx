@@ -3,18 +3,28 @@ import clsx from "clsx";
 import type {Lesson} from "../../../types/lesson.ts";
 import {FileSubmissionPanel} from "./FileSubmissionPanel.tsx";
 import {SafeHtmlContent} from "../../../components/lesson/common/SafeHtmlContent";
-import {autoFormatHeadings} from "../../../utils/autoFormatHeadings";
+import type {LessonSubmissionResponse} from "../../../services/lessonSubmissionService";
 
 interface PracticeContentProps {
     lesson: Lesson;
+    existingSubmission: LessonSubmissionResponse | null | undefined;
     onSubmit: (file: File) => void;
+    onDeleteSubmission: () => void;
     isSubmitting: boolean;
+    isDeleting: boolean;
 }
 
 type Tab = "assignment" | "submission";
 
-export function PracticeContent({lesson, onSubmit, isSubmitting}: PracticeContentProps) {
-    const [tab, setTab] = useState<Tab>("submission");
+export function PracticeContent({
+                                    lesson,
+                                    existingSubmission,
+                                    onSubmit,
+                                    onDeleteSubmission,
+                                    isSubmitting,
+                                    isDeleting,
+                                }: PracticeContentProps) {
+    const [tab, setTab] = useState<Tab>("assignment");
 
     return (
         <div className="rounded-xl border border-gray-100 bg-white p-6">
@@ -41,11 +51,14 @@ export function PracticeContent({lesson, onSubmit, isSubmitting}: PracticeConten
             </div>
 
             {tab === "assignment" ? (
-                <SafeHtmlContent html={autoFormatHeadings(lesson.content)} fallback="Đề bài đang được cập nhật."/>
+                <SafeHtmlContent html={lesson.content} fallback="Đề bài đang được cập nhật."/>
             ) : (
                 <FileSubmissionPanel
+                    existingSubmission={existingSubmission}
                     onSubmit={onSubmit}
+                    onDelete={onDeleteSubmission}
                     isSubmitting={isSubmitting}
+                    isDeleting={isDeleting}
                 />
             )}
         </div>
