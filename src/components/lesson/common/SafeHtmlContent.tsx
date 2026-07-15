@@ -41,7 +41,15 @@ export function SafeHtmlContent({
         if (!containerRef.current) return;
 
         containerRef.current.querySelectorAll("pre code").forEach((block) => {
-            hljs.highlightElement(block as HTMLElement);
+            const el = block as HTMLElement;
+
+            // Một số nội dung cũ bị gắn sẵn class "language-undefined" (do lúc soạn bài
+            // chưa chọn ngôn ngữ, biến lang bị undefined khi build class="language-${lang}").
+            // highlight.js sẽ cố tìm ngôn ngữ tên "undefined", không thấy -> warn và bỏ tô màu.
+            // Xoá class này đi để highlight.js tự động nhận diện ngôn ngữ (auto-detect) thay vào đó.
+            el.classList.remove("language-undefined");
+
+            hljs.highlightElement(el);
         });
     }, [cleanHtml]);
 
