@@ -1,10 +1,16 @@
 import {useNavigate, useParams} from "react-router-dom";
 import {useState} from "react";
 import {Sparkles} from "lucide-react";
+import {toast} from "sonner";
 import {useLessonDetail} from "../../../hooks/useLessonDetail";
 import {useTopicDetail} from "../../../hooks/useTopicDetail";
 import {useModuleIdForTopic} from "../../../hooks/useModuleIdForTopic";
 import {useStudentProgress, useSubmitProgress,} from "../../../hooks/useLessonProgress";
+import {
+    useDeleteLessonSubmission,
+    useLessonSubmission,
+    useSubmitLessonFile,
+} from "../../../hooks/useLessonSubmission";
 import {buildLessonDetailPath} from "../../../constants/routes";
 import {LessonBreadcrumb} from "../components/LessonBreadcrumb.tsx";
 import {Header} from "../../../layouts/Header/Header";
@@ -14,6 +20,10 @@ import {ReadingContent} from "../components/ReadingContent.tsx";
 import {LectureContent} from "../components/LectureContent.tsx";
 import {PracticeContent} from "../components/PracticeContent.tsx";
 import {Loading} from "../../../components/lesson/ui/Loading";
+
+// ⚠️ Học viên demo (chưa có Authentication thật) — đồng bộ studentId với các trang khác.
+// STUDENT_NAME dùng để đặt tên thư mục trên Cloudinary khi nộp bài.
+const STUDENT_NAME = "Học viên demo";
 
 export function LessonDetailPage() {
     const {topicId, lessonId} = useParams<{ topicId: string; lessonId: string }>();
@@ -25,17 +35,18 @@ export function LessonDetailPage() {
     const {data: topic, isLoading: isTopicLoading} = useTopicDetail(topicId);
     const {data: moduleId} = useModuleIdForTopic(topicId);
     const topicsListHref = moduleId ? `/topics/${moduleId}` : undefined;
-    //const {data: progressList} = useStudentProgress(studentId);
     const {data: progressList = []} = useStudentProgress(studentId);
-    console.log("LESSON:", lesson);
-    console.log("TOPIC:", topic);
-    console.log("LESSON ID:", lessonId);
-    console.log("TOPIC ID:", topicId);
 
     const {
         mutate: submitProgress,
-        isPending: isSubmitting,
+        isPending: isSubmittingProgress,
     } = useSubmitProgress(studentId, lesson?.id);
+
+    const {data: existingSubmission} = useLessonSubmission(studentId, lesson?.id);
+    const {mutateAsync: uploadFile, isPending: isUploadingFile} =
+        useSubmitLessonFile(studentId, lesson?.id);
+    const {mutate: removeSubmission, isPending: isDeletingSubmission} =
+        useDeleteLessonSubmission(studentId, lesson?.id);
 
     const [showSummary, setShowSummary] = useState(false);
 
@@ -55,23 +66,43 @@ export function LessonDetailPage() {
                 .map((p) => p.lessonId)
             : []
     );
+
     const handleSelectLesson = (nextLessonId: string) => {
         navigate(buildLessonDetailPath(topic.id, nextLessonId));
     };
 
-    const handleSubmitPractice = (file: File) => {
-        // ⚠️ Backend hiện chưa có endpoint lưu trữ file bài nộp (LessonProgressRequest
-        // không có field chứa file/URL). Tạm thời chỉ đánh dấu hoàn thành tiến độ;
-        // file người dùng chọn CHƯA được lưu lại ở đâu cả — cần bổ sung Firebase Storage
-        // hoặc 1 API upload riêng ở Backend để lưu thật file này.
-        console.log("File bài nộp đã chọn (chưa được lưu lên server):", file.name, file.size);
+    const handleSubmitPractice = async (file: File) => {
+        try {
+            await uploadFile({
+                studentId,
+                studentName: STUDENT_NAME,
+                topicId: topic.id,
+                topicName: topic.topicName,
+                lessonId: lesson.id,
+                lessonName: lesson.lessonName,
+                file,
+            });
+            toast.success(`Đã nộp file "${file.name}" thành công`);
 
-        submitProgress({
-            studentId,
-            lessonId: lesson.id,
-            progress: 100,
-            completed: true,
-            lastPosition: 0,
+            submitProgress({
+                studentId,
+                lessonId: lesson.id,
+                progress: 100,
+                completed: true,
+                lastPosition: 0,
+            });
+        } catch (error) {
+            toast.error("Nộp bài thất bại, vui lòng thử lại");
+            console.error("Lỗi nộp file bài thực hành:", error);
+        }
+    };
+
+    const handleDeleteSubmission = () => {
+        if (!existingSubmission) return;
+
+        removeSubmission(existingSubmission.id, {
+            onSuccess: () => toast.success("Đã xoá bài nộp"),
+            onError: () => toast.error("Xoá bài nộp thất bại, vui lòng thử lại"),
         });
     };
 
@@ -112,11 +143,13 @@ export function LessonDetailPage() {
                         {lesson.type === "PRACTICE" && (
                             <PracticeContent
                                 lesson={lesson}
+                                existingSubmission={existingSubmission}
                                 onSubmit={handleSubmitPractice}
-                                isSubmitting={isSubmitting}
+                                onDeleteSubmission={handleDeleteSubmission}
+                                isSubmitting={isUploadingFile || isSubmittingProgress}
+                                isDeleting={isDeletingSubmission}
                             />
                         )}
-
                         <LessonPagination
                             lessons={topic.lessons}
                             currentLessonId={lesson.id}
