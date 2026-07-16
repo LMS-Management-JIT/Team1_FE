@@ -10,8 +10,6 @@ export interface Lesson {
     videoUrl: string | null;
     duration: number | null;
     description: string | null;
-    starterCode: string | null;
-    language: string | null;
     createdAt: string;
     updatedAt: string;
 }
