@@ -23,12 +23,12 @@ import {Loading} from "../../../components/lesson/ui/Loading";
 
 // ⚠️ Học viên demo (chưa có Authentication thật) — đồng bộ studentId với các trang khác.
 // STUDENT_NAME dùng để đặt tên thư mục trên Cloudinary khi nộp bài.
-const STUDENT_NAME = "Học viên demo";
+const STUDENT_NAME = "Võ Gia Lượng";
 
 export function LessonDetailPage() {
     const {topicId, lessonId} = useParams<{ topicId: string; lessonId: string }>();
     const navigate = useNavigate();
-    const studentId = "CqUc2q8I1oObbXRpGwtN";
+    const studentId = "4IDRHsjGkl5pB4dOHRwP";
 
     // Tất cả hook phải gọi KHÔNG điều kiện, trước mọi early return
     const {data: lesson, isLoading: isLessonLoading} = useLessonDetail(lessonId);
@@ -84,13 +84,6 @@ export function LessonDetailPage() {
             });
             toast.success(`Đã nộp file "${file.name}" thành công`);
 
-            submitProgress({
-                studentId,
-                lessonId: lesson.id,
-                progress: 100,
-                completed: true,
-                lastPosition: 0,
-            });
         } catch (error) {
             toast.error("Nộp bài thất bại, vui lòng thử lại");
             console.error("Lỗi nộp file bài thực hành:", error);
