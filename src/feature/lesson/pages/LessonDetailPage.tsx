@@ -23,12 +23,12 @@ import {Loading} from "../../../components/lesson/ui/Loading";
 
 // ⚠️ Học viên demo (chưa có Authentication thật) — đồng bộ studentId với các trang khác.
 // STUDENT_NAME dùng để đặt tên thư mục trên Cloudinary khi nộp bài.
-const STUDENT_NAME = "Võ Gia Lượng";
+const STUDENT_NAME = "Học viên demo";
 
 export function LessonDetailPage() {
     const {topicId, lessonId} = useParams<{ topicId: string; lessonId: string }>();
     const navigate = useNavigate();
-    const studentId = "4IDRHsjGkl5pB4dOHRwP";
+    const studentId = "CqUc2q8I1oObbXRpGwtN";
 
     // Tất cả hook phải gọi KHÔNG điều kiện, trước mọi early return
     const {data: lesson, isLoading: isLessonLoading} = useLessonDetail(lessonId);
@@ -67,6 +67,10 @@ export function LessonDetailPage() {
             : []
     );
 
+    // lessonOrder giờ chỉ có ở bảng nối topic_lessons (qua topic.lessons), không còn
+    // nằm trên Lesson trực tiếp nữa — lấy đúng số thứ tự của bài đang xem từ đây.
+    const currentLessonOrder = topic.lessons?.find((l) => l.id === lesson.id)?.lessonOrder;
+
     const handleSelectLesson = (nextLessonId: string) => {
         navigate(buildLessonDetailPath(topic.id, nextLessonId));
     };
@@ -83,7 +87,9 @@ export function LessonDetailPage() {
                 file,
             });
             toast.success(`Đã nộp file "${file.name}" thành công`);
-
+            // ⚠️ Không cần gọi submitProgress ở đây nữa — Backend đã tự động
+            // đánh dấu hoàn thành ngay khi lưu bài nộp thành công (xem trigger
+            // trong LessonSubmissionServiceImpl.submit() ở Backend).
         } catch (error) {
             toast.error("Nộp bài thất bại, vui lòng thử lại");
             console.error("Lỗi nộp file bài thực hành:", error);
@@ -129,7 +135,9 @@ export function LessonDetailPage() {
 
                 <div className="flex flex-col gap-6 lg:flex-row">
                     <div className="min-w-0 flex-1">
-                        {lesson.type === "READING" && <ReadingContent lesson={lesson}/>}
+                        {lesson.type === "READING" && (
+                            <ReadingContent lesson={lesson} lessonOrder={currentLessonOrder}/>
+                        )}
                         {lesson.type === "LECTURE" && (
                             <LectureContent lesson={lesson} showSummary={showSummary}/>
                         )}
