@@ -7,7 +7,7 @@ import {ProgressSection} from "./components/ProgressSection/ProgressSection";
 import {TeacherSection} from "./components/TeacherSection/TeacherSection";
 import {TeacherProfileModal} from "./components/TeacherProfileModal/TeacherProfileModal";
 
-const STUDENT_ID = "CqUc2q8I1oObbXRpGwtN";
+const STUDENT_ID = "enoEBcYAuvnZNoXv0u8v";
 
 export default function DashboardUserPage() {
     const [courses, setCourses] = useState<DashboardCourse[]>([]);

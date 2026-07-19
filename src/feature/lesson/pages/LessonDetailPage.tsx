@@ -28,7 +28,7 @@ const STUDENT_NAME = "Học viên demo";
 export function LessonDetailPage() {
     const {topicId, lessonId} = useParams<{ topicId: string; lessonId: string }>();
     const navigate = useNavigate();
-    const studentId = "CqUc2q8I1oObbXRpGwtN";
+    const studentId = "enoEBcYAuvnZNoXv0u8v";
 
     // Tất cả hook phải gọi KHÔNG điều kiện, trước mọi early return
     const {data: lesson, isLoading: isLessonLoading} = useLessonDetail(lessonId);

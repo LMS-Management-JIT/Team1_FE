@@ -6,7 +6,7 @@ import {getStudentCourses} from "../../services/dashboardService";
 import logo from "../../assets/codegym_logo.jpg";
 
 // Dùng chung 1 học viên demo — đồng bộ với STUDENT_ID trong DashboardUserPage.tsx
-const STUDENT_ID = "CqUc2q8I1oObbXRpGwtN";
+const STUDENT_ID = "enoEBcYAuvnZNoXv0u8v";
 
 export function Header() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
