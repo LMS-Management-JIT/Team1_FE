@@ -3,6 +3,7 @@ import DashboardUserPage from "../feature/dashboard-user/DashboardUserPage";
 import ModulesInCoursePage from "../feature/modules-in-course/ModulesInCoursePage";
 import {LessonDetailPage} from "../feature/lesson/pages/LessonDetailPage";
 import ListTopicPage from "../feature/Topic/ListTopicPage.tsx";
+import RankPage from "../feature/rank/RankPage";
 
 export const AppRoutes = () => {
     return (
@@ -24,6 +25,7 @@ export const AppRoutes = () => {
             />
             <Route path="/topics/:moduleId" element={<ListTopicPage/>}/>
             <Route path="/topics" element={<Navigate to="/topics/1" replace/>}/>
+            <Route path="/rank" element={<RankPage />} />
             {/* 404 */}
             {/* <Route path="*" element={<NotFoundPage />} /> */}
         </Routes>

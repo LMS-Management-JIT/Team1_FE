@@ -1,18 +1,19 @@
 import {useEffect, useState, useRef} from 'react'
 import {ChevronLeft, ChevronRight, Grid3x3, Home, Layers, Lock, Play, Pause, Server, Zap, List, BookOpen} from 'lucide-react'
 import {Header} from "../../layouts/Header/Header"
-
 import type {ModuleResponse} from "../../types/module";
 import type {DashboardCourse} from "../../types/dashboard";
 import {getModulesByCourseId} from "../../services/moduleService";
 import {getStudentCourses} from "../../services/dashboardService";
-import {getTopicsByModule} from "../../services/topicService"; 
+import {getTopicsByModule} from "../../services/topicService";
+import {getProgressByStudent} from "../../services/lessonProgressService";
+
 import {useNavigate, useParams} from 'react-router-dom';
 
 const STUDENT_ID = "enoEBcYAuvnZNoXv0u8v";
 
 // ==========================================
-// COMPONENT: TRÌNH PHÁT VIDEO TUỲ CHỈNH (HACK THỜI LƯỢNG 50%)
+// COMPONENT: TRÌNH PHÁT VIDEO TÙY CHỈNH (HACK DỪNG 50%)
 // ==========================================
 const PreviewVideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -40,12 +41,12 @@ const PreviewVideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
         const video = videoRef.current;
         if (!video) return;
         
-        // Cắt nửa thời lượng video làm giới hạn tối đa (vd: 10s -> 5s)
+        // Cắt nửa thời lượng video làm giới hạn (vd: 10s -> 5s)
         const maxTime = video.duration / 2;
         
         if (video.currentTime >= maxTime) {
             video.pause();
-            video.currentTime = maxTime; // Ép dừng chính xác ở mốc 50%
+            video.currentTime = maxTime; // Dừng chính xác ở 50%
             setIsPlaying(false);
         }
         
@@ -56,7 +57,7 @@ const PreviewVideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
     const handleLoadedMetadata = () => {
         const video = videoRef.current;
         if (!video) return;
-        // Hiển thị thời lượng tổng chỉ bằng 50% thời lượng thật
+        // Hiển thị thời lượng giả (chỉ bằng 50% thời lượng thật)
         setDurationDisplay(formatTime(video.duration / 2));
     };
 
@@ -80,7 +81,7 @@ const PreviewVideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
                 onEnded={() => setIsPlaying(false)}
             />
             
-            {/* Thanh điều khiển tuỳ chỉnh (Custom Controls) */}
+            {/* Thanh điều khiển tùy chỉnh (Custom Controls) */}
             <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                 <div className="flex items-center gap-3">
                     <button onClick={togglePlay} className="text-white hover:text-orange-400 transition">
@@ -90,12 +91,12 @@ const PreviewVideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
                     <div className="flex-1 h-1.5 bg-white/30 rounded-full overflow-hidden cursor-pointer relative" onClick={handleSeek}>
                         <div className="absolute top-0 left-0 bottom-0 bg-orange-500" style={{width: `${progress}%`}} />
                     </div>
-                    {/* Hiển thị thời gian đã bị hack */}
+                    {/* Hiển thị thời gian đã hack */}
                     <span className="text-white text-xs font-mono">{currentTimeDisplay} / {durationDisplay}</span>
                 </div>
             </div>
 
-            {/* Nút Play to đùng ở giữa khi tạm dừng */}
+            {/* Nút Play to ở giữa khi tạm dừng */}
             {!isPlaying && (
                 <div onClick={togglePlay} className="absolute inset-0 flex items-center justify-center pointer-events-auto cursor-pointer">
                     <div className="w-14 h-14 bg-orange-500/90 backdrop-blur-md rounded-full border border-white/20 flex items-center justify-center text-white hover:scale-110 transition shadow-lg shadow-orange-500/30">
@@ -105,29 +106,27 @@ const PreviewVideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
             )}
         </div>
     );
-};
-
+}
 
 // ==========================================
 // LOGIC TÍNH TOÁN ICON THÔNG MINH THEO TỪ KHÓA
 // ==========================================
 const getCourseStyles = (course: DashboardCourse, index: number) => {
     const textToSearch = `${course.courseName} ${course.description}`.toLowerCase();
-
     if (textToSearch.match(/ui|front|react|web|html|css/)) return { Icon: Zap, colorClass: 'text-orange-500', bgClass: 'bg-orange-50', activeBg: 'bg-gradient-to-br from-orange-500 to-orange-600' };
     if (textToSearch.match(/back|java|api|data|sql|server/)) return { Icon: Server, colorClass: 'text-slate-500', bgClass: 'bg-slate-100', activeBg: 'bg-gradient-to-br from-slate-600 to-slate-700' };
     if (textToSearch.match(/full|master|dev|cloud|docker/)) return { Icon: Layers, colorClass: 'text-emerald-500', bgClass: 'bg-emerald-50', activeBg: 'bg-gradient-to-br from-emerald-500 to-emerald-600' };
-
+    
     const fallbacks = [
         { Icon: Zap, colorClass: 'text-orange-500', bgClass: 'bg-orange-50', activeBg: 'bg-gradient-to-br from-orange-500 to-orange-600' },
         { Icon: Layers, colorClass: 'text-emerald-500', bgClass: 'bg-emerald-50', activeBg: 'bg-gradient-to-br from-emerald-500 to-emerald-600' },
         { Icon: Server, colorClass: 'text-slate-500', bgClass: 'bg-slate-100', activeBg: 'bg-gradient-to-br from-slate-600 to-slate-700' }
     ];
     return fallbacks[index % 3];
-};
+}
 
 // ==========================================
-// COMPONENT CON: THẺ HIỂN THỊ KHÓA HỌC SIDEBAR
+// COMPONENT CON: THẺ KHÓA HỌC Ở SIDEBAR
 // ==========================================
 const SidebarCourseCard = ({course, index, isActive, onClick}: { course: DashboardCourse, index: number, isActive: boolean, onClick: () => void }) => {
     const [imgError, setImgError] = useState(!course.thumbnailUrl);
@@ -156,10 +155,6 @@ const SidebarCourseCard = ({course, index, isActive, onClick}: { course: Dashboa
                         <span className="text-xs font-medium text-white/80 truncate">{course.description || "Khóa học Dev Space"}</span>
                     </div>
                 </div>
-                <div className="flex flex-col gap-1.5 relative z-10">
-                    <div className="flex justify-between text-xs font-bold text-white/90"><span>Tiến độ</span><span>Đang học</span></div>
-                    <div className="w-full h-1.5 bg-white/20 rounded-full overflow-hidden"><div className="w-[30%] h-full bg-white rounded-full shadow-sm animate-pulse"/></div>
-                </div>
             </div>
         );
     }
@@ -173,14 +168,9 @@ const SidebarCourseCard = ({course, index, isActive, onClick}: { course: Dashboa
                     <span className="text-xs font-medium text-slate-400 truncate">{course.description || "Khóa học Dev Space"}</span>
                 </div>
             </div>
-            <div className="flex flex-col gap-1.5">
-                <div className="flex justify-between text-xs font-bold text-slate-400"><span>Tiến độ</span><span>Chưa bắt đầu</span></div>
-                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="w-[0%] h-full bg-slate-300 rounded-full"/></div>
-            </div>
         </div>
     );
-};
-
+}
 
 // ==========================================
 // TRANG CHÍNH: MODULES IN COURSE PAGE
@@ -188,16 +178,17 @@ const SidebarCourseCard = ({course, index, isActive, onClick}: { course: Dashboa
 export default function ModulesInCoursePage() {
     const {courseId} = useParams<{ courseId: string }>();
     const navigate = useNavigate();
-
+    
     const [myCourses, setMyCourses] = useState<DashboardCourse[]>([]);
     const [activeCourseId, setActiveCourseId] = useState<string>("");
-
+    
     const [modules, setModules] = useState<ModuleResponse[]>([]);
     const [isLoadingModules, setIsLoadingModules] = useState<boolean>(false);
-
-    // Lưu số lượng Topics
+    
+    // Lưu số lượng Topics và Tiến độ thực tế
     const [topicCounts, setTopicCounts] = useState<Record<string, number>>({});
-
+    const [moduleProgress, setModuleProgress] = useState<Record<string, { total: number, completed: number }>>({});
+    
     const [isGridLayout, setIsGridLayout] = useState<boolean>(false);
     const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
 
@@ -205,7 +196,7 @@ export default function ModulesInCoursePage() {
         getStudentCourses(STUDENT_ID).then(data => {
             setMyCourses(data);
             if (data.length > 0) setActiveCourseId(courseId || data[0].id);
-        }).catch(err => console.error("Lỗi tải danh sách khóa học:", err));
+        }).catch(err => console.error("Lỗi danh sách khóa học:", err));
     }, [courseId]);
 
     useEffect(() => {
@@ -231,22 +222,49 @@ export default function ModulesInCoursePage() {
             setPreviewVideoUrl(null);
             
             try {
-                const counts: Record<string, number> = {};
-                let foundVideo = false;
-                const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
+                // 1. GỌI API LẤY TIẾN ĐỘ HỌC CỦA STUDENT NÀY
+                const progressData = await getProgressByStudent(STUDENT_ID).catch(() => []);
+                const progressArray = Array.isArray(progressData) ? progressData : (progressData.data || []);
+                const completedLessonIds = new Set(
+                    progressArray.filter((p: any) => p.completed).map((p: any) => p.lessonId || p.lesson_id)
+                );
 
-                // Lấy Topics của TẤT CẢ module để đếm số lượng
+                const counts: Record<string, number> = {};
+                const progressMap: Record<string, { total: number, completed: number }> = {};
+                let foundVideo = false;
+                
+                const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
+                
+                // Lấy Topics của các module 
                 const topicResults = await Promise.all(
                     modules.map(mod => getTopicsByModule(mod.id).catch(() => []))
                 );
 
-                // Lưu số lượng bài học hiển thị cho thẻ
+                // 2. TÍNH TOÁN DYNAMIC PROGRESS CHO TỪNG MODULE
                 modules.forEach((mod, idx) => {
-                    counts[mod.id] = topicResults[idx]?.length || 0;
-                });
-                if(active) setTopicCounts(counts);
+                    const topics = topicResults[idx] || [];
+                    counts[mod.id] = topics.length;
 
-                // Quét tìm Video bài học
+                    let totalLessons = 0;
+                    let completedLessons = 0;
+                    
+                    topics.forEach((topic: any) => {
+                        if (topic.lessons) {
+                            topic.lessons.forEach((l: any) => {
+                                totalLessons++;
+                                if (completedLessonIds.has(l.id)) completedLessons++;
+                            });
+                        }
+                    });
+                    progressMap[mod.id] = { total: totalLessons, completed: completedLessons };
+                });
+
+                if (active) {
+                    setTopicCounts(counts);
+                    setModuleProgress(progressMap);
+                }
+
+                // Quét tìm Video bài giảng
                 for (const topics of topicResults) {
                     if (foundVideo || !topics) continue;
                     for (const topic of topics) {
@@ -265,7 +283,7 @@ export default function ModulesInCoursePage() {
                     }
                 }
             } catch (e) {
-                console.error("Lỗi quét topics/video:", e);
+                console.error("Lỗi quét topics/video/progress:", e);
             }
         };
         
@@ -285,12 +303,16 @@ export default function ModulesInCoursePage() {
         courseName: "Đang tải dữ liệu...", description: "Vui lòng chờ trong giây lát..."
     };
 
+    // TÍNH TỔNG TIẾN ĐỘ TOÀN KHÓA HỌC
+    const totalCourseLessons = Object.values(moduleProgress).reduce((acc, curr) => acc + curr.total, 0);
+    const totalCourseCompleted = Object.values(moduleProgress).reduce((acc, curr) => acc + curr.completed, 0);
+    const coursePercent = totalCourseLessons > 0 ? Math.round((totalCourseCompleted / totalCourseLessons) * 100) : 0;
+
     return (
         <div className="flex flex-col h-screen w-full bg-slate-50 text-slate-900 font-sans antialiased overflow-hidden">
             <Header/>
-
             <div className="flex flex-1 overflow-hidden">
-                {/* ── LEFT SIDEBAR ── */}
+                {/* --- LEFT SIDEBAR --- */}
                 <aside className="w-[280px] bg-white border-r border-slate-200 flex flex-col shrink-0 h-full z-20 shadow-sm">
                     <div className="h-[72px] px-6 border-b border-slate-200 flex items-center justify-between shrink-0">
                         <div className="flex items-center gap-2.5">
@@ -306,7 +328,7 @@ export default function ModulesInCoursePage() {
 
                     <div className="flex-1 overflow-y-auto">
                         <div className="px-6 pt-6 pb-3 flex items-center justify-between">
-                            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Khóa học của tôi</h2>
+                            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Khóa Học</h2>
                             <span className="bg-orange-50 text-orange-600 text-xs font-bold px-2 py-0.5 rounded-full border border-orange-100">{myCourses.length}</span>
                         </div>
                         <div className="flex flex-col gap-2 px-3 pb-8">
@@ -321,9 +343,8 @@ export default function ModulesInCoursePage() {
                     </div>
                 </aside>
 
-                {/* ── MAIN CONTENT ── */}
+                {/* --- MAIN CONTENT --- */}
                 <main className="flex-1 h-full overflow-y-auto overflow-x-hidden flex flex-col relative">
-
                     <header className="w-full h-[72px] px-6 lg:px-8 flex shrink-0 items-center justify-between border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-40 shadow-sm">
                         <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
                             <span onClick={() => navigate('/')} className="hover:text-orange-600 cursor-pointer transition flex items-center gap-1.5 hover:bg-orange-50 px-2.5 py-1.5 rounded-lg">
@@ -334,8 +355,7 @@ export default function ModulesInCoursePage() {
                             <span className="text-slate-700 font-semibold truncate max-w-[180px] sm:max-w-none">{activeCourseData.courseName}</span>
                         </div>
                         
-                        {/* ĐÃ ĐỔI ICON LINH HOẠT TÙY THEO TRẠNG THÁI */}
-                        <button
+                        <button 
                             onClick={() => setIsGridLayout(!isGridLayout)}
                             className="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-orange-600 transition px-3 py-2 rounded-lg hover:bg-orange-50 border border-transparent hover:border-orange-200">
                             {isGridLayout ? <List className="w-4 h-4"/> : <Grid3x3 className="w-4 h-4"/>}
@@ -347,47 +367,45 @@ export default function ModulesInCoursePage() {
                         <section className="w-full bg-slate-900 rounded-3xl overflow-hidden shadow-2xl shadow-slate-900/30 relative transition-all duration-500">
                             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(249,115,22,0.2),transparent_70%)]"/>
                             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(249,115,22,0.08),transparent_60%)]"/>
-
+                            
                             <div className="relative z-10 p-8 sm:p-10 lg:p-12 flex flex-col xl:flex-row items-center gap-8 xl:gap-12">
                                 <div className="flex-1 flex flex-col gap-6 w-full">
                                     <div className="flex items-center gap-3 flex-wrap">
                                         <span className="bg-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg uppercase tracking-wider">
                                             Đang học
                                         </span>
-                                        {/* ĐÃ ĐỔI NGÔI SAO THÀNH CHỮ ĐỘ KHÓ */}
                                         <div className="flex items-center gap-1.5 bg-white/10 rounded-lg px-3 py-1.5 backdrop-blur-sm border border-white/10">
-                                            <span className="text-orange-400 text-xs font-bold uppercase tracking-wider">Độ Khó</span>
+                                            <span className="text-orange-400 text-xs font-bold uppercase tracking-wider">★</span>
                                             <span className="text-white text-xs font-bold">4.5 / 5.0</span>
                                         </div>
                                     </div>
-
                                     <div>
                                         <h1 className="text-4xl sm:text-5xl lg:text-5xl font-black text-white tracking-tight leading-tight line-clamp-2">
                                             {activeCourseData.courseName}
                                         </h1>
                                     </div>
-
                                     <p className="text-base text-slate-300 max-w-xl leading-relaxed line-clamp-3">
-                                        {activeCourseData.description || "Nắm vững các kỹ thuật liên quan thông qua dự án thực tế. Quản lý trạng thái, tối ưu hiệu suất và chuẩn bị cho môi trường làm việc."}
+                                        {activeCourseData.description || "Nâng cao kỹ thuật lập trình qua dự án thực tế. Quản lý thời gian, tối ưu hiệu suất và chuẩn bị cho môi trường làm việc."}
                                     </p>
-
+                                    
                                     <div className="flex flex-wrap items-center gap-6 pt-2">
                                         <button className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-bold active:scale-95 transition-all shadow-lg shadow-orange-500/30 flex items-center gap-2 text-sm">
                                             <Play className="w-4 h-4 fill-current"/>
-                                            Sử Dụng IDE
+                                            Sử dụng IDE
                                         </button>
+
                                         <div className="flex flex-col gap-2">
                                             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tiến độ</span>
                                             <div className="flex items-center gap-3">
                                                 <div className="w-40 h-2 bg-slate-700 rounded-full overflow-hidden">
-                                                    <div className="w-[30%] h-full bg-gradient-to-r from-orange-500 to-orange-400 rounded-full shadow-sm"/>
+                                                    <div className="h-full bg-gradient-to-r from-orange-500 to-orange-400 rounded-full shadow-sm" style={{ width: `${coursePercent}%` }}/>
                                                 </div>
-                                                <span className="text-orange-400 font-bold text-sm">30%</span>
+                                                <span className="text-orange-400 font-bold text-sm">{coursePercent}%</span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-
+                                
                                 <div className="w-full xl:w-[340px] shrink-0 aspect-[4/3] bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden relative shadow-2xl flex flex-col">
                                     <div className="w-full h-9 bg-slate-900 border-b border-slate-700 flex items-center px-4 gap-2 shrink-0">
                                         <div className="w-2.5 h-2.5 rounded-full bg-red-500 hover:bg-red-600 transition cursor-pointer"/>
@@ -439,12 +457,11 @@ export default function ModulesInCoursePage() {
                                 )}
                             </div>
 
-                            <div id="modules-scroll"
-                                 className={isGridLayout
-                                     ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 pt-4 pb-6"
+                            <div id="modules-scroll" 
+                                 className={isGridLayout 
+                                     ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 pt-4 pb-6" 
                                      : "flex gap-5 overflow-x-auto pt-4 pb-6 px-4 -mx-4 snap-x snap-mandatory scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
                                  }>
-
                                 {isLoadingModules ? (
                                     <div className="text-slate-500 font-medium px-4">Đang tải danh sách module...</div>
                                 ) : modules.length === 0 ? (
@@ -454,6 +471,10 @@ export default function ModulesInCoursePage() {
                                         const isFirst = index === 0;
                                         const displayNumber = String(index + 1).padStart(2, '0');
                                         const cardWidthClass = isGridLayout ? 'w-full' : 'w-[280px] sm:w-[300px] shrink-0 snap-start';
+                                        
+                                        // TÍNH % RIÊNG CỦA TỪNG MODULE
+                                        const modProgress = moduleProgress[mod.id] || { total: 0, completed: 0 };
+                                        const modPercent = modProgress.total > 0 ? Math.round((modProgress.completed / modProgress.total) * 100) : 0;
 
                                         if (isFirst) {
                                             return (
@@ -461,7 +482,7 @@ export default function ModulesInCoursePage() {
                                                     <div className="h-full bg-white rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden shadow-lg hover:shadow-xl shadow-orange-500/10 ring-2 ring-orange-500 hover:-translate-y-1 transition-all duration-300">
                                                         <div className="absolute -top-16 -right-16 w-40 h-40 bg-orange-500/10 rounded-full blur-3xl pointer-events-none"/>
                                                         <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-orange-500/5 rounded-full blur-2xl pointer-events-none"/>
-
+                                                        
                                                         <div className="flex items-start justify-between relative z-10">
                                                             <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center font-bold text-base">
                                                                 {displayNumber}
@@ -474,11 +495,10 @@ export default function ModulesInCoursePage() {
                                                         <div className="flex flex-col gap-1.5 relative z-10">
                                                             <h3 className="text-base font-bold text-slate-900 leading-snug">{mod.moduleName}</h3>
                                                             <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
-                                                                {mod.description || "Chưa có mô tả."}
+                                                                {mod.description || "Chưa có mô tả cho module này."}
                                                             </p>
                                                         </div>
                                                         <div className="mt-auto pt-4 border-t border-slate-200 flex flex-col gap-3 relative z-10">
-                                                            {/* HIỂN THỊ SỐ LƯỢNG TOPIC */}
                                                             <div className="flex items-center justify-between text-xs font-bold text-slate-400">
                                                                 <span>Mã: {mod.moduleCode}</span>
                                                                 <span className="text-orange-600 bg-orange-100 px-2 py-0.5 rounded-md flex items-center gap-1">
@@ -486,11 +506,11 @@ export default function ModulesInCoursePage() {
                                                                 </span>
                                                             </div>
                                                             <div className="w-full h-1.5 bg-orange-50 rounded-full overflow-hidden">
-                                                                <div className="w-[45%] h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full"/>
+                                                                <div className="h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full" style={{ width: `${modPercent}%` }}/>
                                                             </div>
                                                             <button className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg transition flex items-center justify-center gap-2">
                                                                 <Play className="w-3 h-3 fill-current"/>
-                                                                Vào học ngay
+                                                                Học ngay
                                                             </button>
                                                         </div>
                                                     </div>
@@ -511,7 +531,7 @@ export default function ModulesInCoursePage() {
                                                         <div className="flex flex-col gap-1.5">
                                                             <h3 className="text-base font-bold text-slate-500 leading-snug">{mod.moduleName}</h3>
                                                             <p className="text-xs text-slate-400 leading-relaxed line-clamp-2">
-                                                                {mod.description || "Chưa có mô tả."}
+                                                                {mod.description || "Chưa có mô tả cho module này."}
                                                             </p>
                                                         </div>
                                                         <div className="mt-auto pt-4 border-t border-slate-200 flex flex-col gap-3">
@@ -522,10 +542,10 @@ export default function ModulesInCoursePage() {
                                                                 </span>
                                                             </div>
                                                             <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                                                <div className="w-0 h-full bg-slate-300 rounded-full"/>
+                                                                <div className="h-full bg-slate-300 rounded-full" style={{ width: `${modPercent}%` }}/>
                                                             </div>
                                                             <button className="w-full py-2.5 bg-slate-100 text-slate-400 text-xs font-bold rounded-lg cursor-not-allowed" disabled>
-                                                                Bị khóa - Yêu cầu hoàn thành module trước
+                                                                Bài Khóa - Yêu cầu hoàn thành module trước
                                                             </button>
                                                         </div>
                                                     </div>

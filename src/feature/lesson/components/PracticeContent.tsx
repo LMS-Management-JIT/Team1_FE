@@ -15,7 +15,8 @@ interface PracticeContentProps {
     onDeleteSubmission: () => void;
     isSubmitting: boolean;
     isDeleting: boolean;
-    onQuizSubmitted?: (result: QuizSubmissionResult) => void;
+    onQuizSubmitted?: (result: QuizSubmissionResult, attempts: number) => void;
+    isCompleted?: boolean; // BỔ SUNG DÒNG NÀY
 }
 
 type Tab = "assignment" | "submission" | "quiz";
@@ -29,6 +30,7 @@ export function PracticeContent({
                                     isSubmitting,
                                     isDeleting,
                                     onQuizSubmitted,
+                                    isCompleted,
                                 }: PracticeContentProps) {
     const [tab, setTab] = useState<Tab>("assignment");
 
@@ -76,6 +78,7 @@ export function PracticeContent({
                     lessonId={lesson.id}
                     studentId={studentId}
                     onSubmitted={onQuizSubmitted}
+                    isCompleted={isCompleted}
                 />
             )}
         </div>
