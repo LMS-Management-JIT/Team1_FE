@@ -16,7 +16,6 @@ export function useStudentProgress(studentId: string | undefined) {
     });
 }
 
-// MỚI: dùng để biết học viên đã có progress cho lesson này chưa
 export function useLessonProgressByStudentAndLesson(
     studentId: string | undefined,
     lessonId: string | undefined
@@ -33,20 +32,22 @@ export function useSubmitProgress(studentId: string | undefined, lessonId: strin
 
     return useMutation({
         mutationFn: async (request: LessonProgressRequest) => {
-            const existing = await getProgressByStudentAndLesson(
-                request.studentId,
-                request.lessonId
-            );
-
-            return existing
-                ? updateProgress(existing.id, request)
-                : createProgress(request);
+            console.log("⏳ [MUTATION START] Bắt đầu quá trình lưu tiến độ...");
+            const existing = await getProgressByStudentAndLesson(request.studentId, request.lessonId);
+            return existing ? updateProgress(existing.id, request) : createProgress(request);
         },
-        onSuccess: () => {
+        onSuccess: (data) => {
+            console.log("🎉 [MUTATION SUCCESS] Đã lưu tiến độ xong! Dữ liệu trả về:", data);
             toast.success("Đã ghi nhận tiến độ học tập");
+            
+            // Xóa cache để UI gọi lại API và cập nhật 0/4 thành 1/4
+            console.log("🧹 [CACHE INVALIDATE] Đang xóa cache để render lại UI...");
             queryClient.invalidateQueries({queryKey: ["lesson-progress", studentId]});
             queryClient.invalidateQueries({queryKey: ["lesson-progress", studentId, lessonId]});
         },
-        onError: () => toast.error("Không thể lưu tiến độ, vui lòng thử lại"),
+        onError: (err) => {
+            console.error("❌ [MUTATION ERROR] Không thể lưu tiến độ:", err);
+            toast.error("Không thể lưu tiến độ, vui lòng thử lại");
+        },
     });
 }

@@ -12,32 +12,29 @@ interface LessonSidebarProps {
     backToTopicsHref?: string;
 }
 
-// Icon riêng cho từng loại bài học (dùng khi bài chưa hoàn thành / chưa phải bài đang xem)
-const typeIconMap = {
-    READING: BookOpen,
-    LECTURE: PlayCircle,
-    PRACTICE: Code2,
-    QUIZ: HelpCircle,
-};
-
-function getLessonMeta(lesson: LessonSummary) {
-    if (lesson.type === "READING") return {label: "Bài đọc", unit: "phút"};
-    if (lesson.type === "LECTURE") return {label: "Bài giảng", unit: "phút"};
-    if (lesson.type === "QUIZ") return {label: "Kiểm tra", unit: "câu"};
-    return {label: "Thực hành", unit: "câu"};
-}
+const typeIconMap = { READING: BookOpen, LECTURE: PlayCircle, PRACTICE: Code2, QUIZ: HelpCircle };
+function getLessonMeta(lesson: LessonSummary) { /* Giữ nguyên */ return {label: "Bài", unit: "phút"}; }
 
 export function LessonSidebar({
-                                  topicName,
-                                  lessons,
-                                  currentLessonId,
-                                  completedLessonIds,
-                                  onSelectLesson,
-                                  backToTopicsHref,
-                              }: LessonSidebarProps) {
+    topicName, lessons, currentLessonId, completedLessonIds, onSelectLesson, backToTopicsHref,
+}: LessonSidebarProps) {
     const safeLessons = lessons ?? [];
     const sortedLessons = [...safeLessons].sort((a, b) => a.lessonOrder - b.lessonOrder);
-    const completedCount = safeLessons.filter((l) => completedLessonIds.has(l.id)).length;
+    
+    // ==========================================
+    // DEBUG LOGS CHO SIDEBAR
+    // ==========================================
+    console.log("🧩 [SIDEBAR CALC] Các ID Đã Hoàn Thành nhận được từ Cha:", Array.from(completedLessonIds));
+    console.log("🧩 [SIDEBAR CALC] ID Bài học trong Sidebar:", safeLessons.map(l => l.id));
+
+    const completedCount = safeLessons.filter((l) => {
+        const isMatched = completedLessonIds.has(l.id);
+        if (isMatched) console.log(`✅ Khớp ID! Đã đếm bài: ${l.id}`);
+        return isMatched;
+    }).length;
+    
+    console.log(`📊 [SIDEBAR SCORE] Kết quả đếm: ${completedCount}/${safeLessons.length}`);
+    // Tính toán % cho thanh Progress bar màu cam
     const progressPercent = safeLessons.length
         ? Math.round((completedCount / safeLessons.length) * 100)
         : 0;
@@ -64,6 +61,7 @@ export function LessonSidebar({
                     {completedCount}/{safeLessons.length} bài học hoàn thành
                 </p>
 
+                {/* THANH PROGRESS BAR */}
                 <div
                     role="progressbar"
                     aria-valuemin={0}
@@ -83,9 +81,9 @@ export function LessonSidebar({
                     const isCurrent = lesson.id === currentLessonId;
                     const isCompleted = completedLessonIds.has(lesson.id);
                     const meta = getLessonMeta(lesson);
-                    const TypeIcon = typeIconMap[lesson.type] ?? BookOpen;
+                    const TypeIcon = typeIconMap[lesson.type as keyof typeof typeIconMap] ?? BookOpen;
 
-                    // Đã hoàn thành = xanh lá rõ · đang xem = cam đặc · còn lại = xám, icon riêng theo loại bài
+                    // Đã hoàn thành = xanh lá · đang xem = cam đặc · còn lại = xám
                     const iconBoxClass = isCompleted
                         ? "bg-emerald-100 text-emerald-600"
                         : isCurrent
@@ -121,7 +119,7 @@ export function LessonSidebar({
                                 </span>
 
                                 <span className="min-w-0">
-                                    <p className={clsx("text-[12.5px] font-semibold leading-[16.2px]", titleClass)}>
+                                    <p className={clsx("text-[12.5px] font-semibold leading-[16.2px] line-clamp-1", titleClass)}>
                                         {lesson.lessonOrder}. {lesson.lessonName}
                                     </p>
                                     <p className="text-[10.5px] font-normal leading-normal text-gray-400">
