@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Sparkles, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { useLessonDetail } from "../../../hooks/useLessonDetail";
@@ -60,14 +60,16 @@ export function LessonDetailPage() {
     if (isLessonLoading || isTopicLoading || !lesson || !topic) {
         return <div className="flex min-h-screen items-center justify-center"><Loading/></div>;
     }
-
+    // lessonOrder giờ lấy từ topic.lessons
+    const currentLessonOrder =
+        topic.lessons?.find((l) => l.id === lesson.id)?.lessonOrder;
     // ========================================================
     // HÀM CHÍNH: LƯU TIẾN ĐỘ & CỘNG XP (Hỗ trợ 0 XP)
     // ========================================================
     const handleLessonComplete = async (xpEarned: number) => { 
-        // 🛑 UI CHỐNG HACK: Nếu ID bài này đã nằm trong mảng hoàn thành, không chạy logic cộng điểm nữa
+        // UI CHỐNG HACK: Nếu ID bài này đã nằm trong mảng hoàn thành, không chạy logic cộng điểm nữa
         if (completedLessonIds.has(lesson.id)) {
-            console.log("🛡️ [UI BLOCK] Bài đã hoàn thành, từ chối chạy hàm cộng điểm.");
+            console.log("[UI BLOCK] Bài đã hoàn thành, từ chối chạy hàm cộng điểm.");
             return;
         }
 
@@ -80,12 +82,12 @@ export function LessonDetailPage() {
             try {
                 // Truyền lesson.id làm sourceId để Database Firebase ghi sổ
                 await addXpToRank(studentId, xpEarned, lesson.id);
-                toast.success(`🎉 Tuyệt vời! Bạn nhận được +${xpEarned} XP!`, { duration: 4000 });
+                toast.success(`Tuyệt vời! Bạn nhận được +${xpEarned} XP!`, { duration: 4000 });
             } catch (e) {
-                console.error("❌ [LỖI CỘNG XP] Thất bại:", e);
+                console.error("[LỖI CỘNG XP] Thất bại:", e);
             }
         } else {
-            toast.success(`✅ Đã lưu tiến độ hoàn thành bài học!`, { duration: 3000 });
+            toast.success(`Đã lưu tiến độ hoàn thành bài học!`, { duration: 3000 });
         }
     };
 
@@ -112,7 +114,7 @@ export function LessonDetailPage() {
 
             // Nếu đã từng làm rồi mà Xoá đi nộp lại
             if (completedLessonIds.has(lesson.id)) {
-                toast.success("✅ Đã cập nhật bài nộp mới (Bạn đã nhận điểm XP của bài này trước đó rồi nhé)");
+                toast.success("Đã cập nhật bài nộp mới (Bạn đã nhận điểm XP của bài này trước đó rồi nhé)");
             } else {
                 toast.success(`Đã nộp file "${file.name}" thành công`);
                 handleLessonComplete(20);
@@ -134,7 +136,7 @@ export function LessonDetailPage() {
         <div className="flex min-h-screen flex-col bg-white">
             <Header/>
             
-            {/* 🛑 MODAL XÁC NHẬN ĐỌC XONG (KHÔNG CỘNG XP NỮA) */}
+            {/* MODAL XÁC NHẬN ĐỌC XONG (KHÔNG CỘNG XP NỮA) */}
             {pendingLessonRoute && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
                     <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl animate-in fade-in zoom-in duration-200">
@@ -169,7 +171,12 @@ export function LessonDetailPage() {
 
                 <div className="flex flex-col gap-6 lg:flex-row">
                     <div className="min-w-0 flex-1">
-                        {lesson.type === "READING" && <ReadingContent lesson={lesson} />}
+                        {lesson.type === "READING" && (
+                            <ReadingContent
+                                lesson={lesson}
+                                lessonOrder={currentLessonOrder}
+                            />
+                        )}
                         {lesson.type === "LECTURE" && <LectureContent lesson={lesson} showSummary={showSummary} onComplete={handleLessonComplete} />}
                         
                         {lesson.type === "PRACTICE" && (
@@ -186,7 +193,7 @@ export function LessonDetailPage() {
                                     const quizId = (result as any).quizId || (result as any).id || "quiz"; 
                                     const customFirebaseId = `${quizId}_${lesson.id}`;
                                     
-                                    console.log("🚀 Đang nộp Firebase với ID:", customFirebaseId);
+                                    console.log("Đang nộp Firebase với ID:", customFirebaseId);
 
                                     if (result.scorePercent === 100) { 
                                         // 2. LÀM ĐÚNG: Lưu 99% để test, completed = true với custom ID
@@ -202,9 +209,9 @@ export function LessonDetailPage() {
                                         const xp = (attempts === 1) ? 15 : 10;
                                         try {
                                             await addXpToRank(studentId, xp, customFirebaseId);
-                                            toast.success(`🎉 Tuyệt vời! Bạn nhận được +${xp} XP!`, { duration: 5000 });
+                                            toast.success(`Tuyệt vời! Bạn nhận được +${xp} XP!`, { duration: 5000 });
                                         } catch (e) {
-                                            console.error("❌ [LỖI CỘNG XP] Thất bại:", e);
+                                            console.error("[LỖI CỘNG XP] Thất bại:", e);
                                             toast.error("Lỗi: Không thể lưu điểm XP.");
                                         }
                                     } else {
@@ -229,7 +236,7 @@ export function LessonDetailPage() {
                                     await handleLessonComplete(0);
                                 }
                                 
-                                // 2. 🎁 PHẦN THƯỞNG 30 XP KHI CLEAR TOPIC (Truyền ID chương học lên để lưu)
+                                // 2. PHẦN THƯỞNG 30 XP KHI CLEAR TOPIC (Truyền ID chương học lên để lưu)
                                 try {
                                     await addXpToRank(studentId, 30, `TOPIC_${topic.id}`);
                                     toast.success("🏆 CHÚC MỪNG! Bạn đã hoàn thành trọn vẹn chương học và được thưởng +30 XP!", { duration: 5000 });
