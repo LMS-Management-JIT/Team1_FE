@@ -1,4 +1,4 @@
-import { Bell, Menu, Search, X, LogOut, Flag } from "lucide-react";
+import {Bell, Menu, Search, X, LogOut, Trophy, MessageCircle} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import clsx from "clsx";
