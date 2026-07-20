@@ -1,25 +1,48 @@
-import { Bell, Menu, Trophy, MessageCircle, Search } from "lucide-react";
+import { Bell, Menu, Search, X, LogOut, Flag } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import { getStudentCourses } from "../../services/dashboardService";
+import { useAuth } from "../../services/authService"; // Đảm bảo đúng đường dẫn đến file authService của bạn
 import logo from "../../assets/codegym_logo.jpg";
-
-// Dùng chung 1 học viên demo — đồng bộ với STUDENT_ID trong DashboardUserPage.tsx
-const STUDENT_ID = "enoEBcYAuvnZNoXv0u8v";
+import { useAuthContext } from "../../feature/auth/context/AuthContext.tsx";
 
 export function Header() {
+
+    const { user, studentId } = useAuthContext();
+
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [showProfileMenu, setShowProfileMenu] = useState(false); // State quản lý dropdown ẩn/hiện nút Đăng xuất
     const [homeCourseId, setHomeCourseId] = useState<string | null>(null);
+
     const location = useLocation();
+    const navigate = useNavigate();
+
+    // Lấy hàm logout và trạng thái đang xử lý từ useAuth
+    const { logout, isLoggingOut } = useAuth();
+
 
     useEffect(() => {
-        getStudentCourses(STUDENT_ID)
+        if (!studentId) return;
+
+        getStudentCourses(studentId)
             .then((courses) => {
                 if (courses.length > 0) setHomeCourseId(courses[0].id);
             })
             .catch(() => setHomeCourseId(null));
-    }, []);
+    }, [studentId]);
+
+    // Xử lý đăng xuất an toàn
+    const handleLogout = () => {
+        logout(undefined, {
+            onSettled: () => {
+                // Luôn chạy khối này dù API có lỗi hay không: Xóa trạng thái UI và đá về Login
+                setShowProfileMenu(false);
+                setMobileMenuOpen(false);
+                navigate('/login', { replace: true });
+            }
+        });
+    };
 
     // "Khóa học" cần courseId đúng trang Modules (Ưu tiên lấy khóa học đầu tiên)
     const coursesHref = homeCourseId ? `/courses/${homeCourseId}/modules` : "/";
@@ -36,7 +59,7 @@ export function Header() {
     ];
 
     return (
-        <header className="relative bg-[#ff6b13] px-4 text-white sm:px-6 lg:px-8">
+        <header className="relative bg-[#ff6b13] px-4 text-white sm:px-6 lg:px-8 z-30">
             <div className="flex h-14 items-center gap-4 lg:gap-12">
                 <Link to="/" className="flex shrink-0 items-center gap-3 font-bold">
                     <img src={logo} alt="CodeGym" className="h-9 w-9 rounded-md object-contain" />
@@ -99,17 +122,36 @@ export function Header() {
                         </span>
                     </button>
 
-                    {/* Avatar */}
-                    <button className="h-8 w-8 shrink-0 rounded-full bg-orange-100 text-sm font-bold text-[#ff6b13]">
-                        HV
-                    </button>
+                    {/* Vùng Avatar + Dropdown chọn Đăng xuất */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowProfileMenu(!showProfileMenu)}
+                            disabled={isLoggingOut}
+                            className="h-8 w-8 shrink-0 rounded-full bg-orange-100 text-sm font-bold text-[#ff6b13] transition-transform active:scale-95 disabled:opacity-50"
+                        >
+                            {isLoggingOut ? "..." : (user?.displayName?.substring(0, 2).toUpperCase() || "HV")}
+                        </button>
+
+                        {showProfileMenu && (
+                            <div className="absolute right-0 mt-2 w-48 rounded-xl bg-white py-1 shadow-xl ring-1 ring-black/5 z-50 animate-in fade-in slide-in-from-top-1 duration-100">
+                                <button
+                                    onClick={handleLogout}
+                                    className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"
+                                    type="button"
+                                >
+                                    <LogOut size={16} />
+                                    {isLoggingOut ? "Đang xử lý..." : "Đăng xuất"}
+                                </button>
+                            </div>
+                        )}
+                    </div>
 
                     {/* Nút menu toggle mobile */}
                     <button
                         className="grid h-8 w-8 place-items-center rounded-full bg-white/20 lg:hidden"
                         onClick={() => setMobileMenuOpen((prev) => !prev)}
                     >
-                        <Menu size={16} />
+                        {mobileMenuOpen ? <X size={16}/> : <Menu size={16}/>}
                     </button>
                 </div>
             </div>
