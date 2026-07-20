@@ -6,6 +6,7 @@ import ListTopicPage from "../feature/Topic/ListTopicPage.tsx";
 import LoginPage from '../feature/login/LoginPage'
 import { PublicRoute } from "../components/auth/PublicRoute.tsx";
 import ForbiddenPage from '../pages/ForbiddenPage'
+import RankPage from "../feature/rank/RankPage";
 
 export const AppRoutes = () => {
     return (
@@ -42,6 +43,7 @@ export const AppRoutes = () => {
             />
             <Route path="/topics/:moduleId" element={<ListTopicPage/>}/>
             <Route path="/topics" element={<Navigate to="/topics/1" replace/>}/>
+            <Route path="/rank" element={<RankPage />} />
             {/* 404 */}
             {/* <Route path="*" element={<NotFoundPage />} /> */}
         </Routes>

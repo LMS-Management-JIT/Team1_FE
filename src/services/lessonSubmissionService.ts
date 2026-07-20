@@ -11,16 +11,24 @@ export interface LessonSubmissionResponse {
     submittedAt: string;
 }
 
-// Gửi file thật lên Backend — Backend sẽ tự upload lên Firebase Storage và lưu metadata.
-// Dùng FormData (multipart/form-data), KHÔNG phải JSON như các API khác.
-export async function submitLessonFile(
-    studentId: string,
-    lessonId: string,
-    file: File
-): Promise<LessonSubmissionResponse> {
+export async function submitLessonFile(params: {
+    studentId: string;
+    studentName: string;
+    topicId: string;
+    topicName: string;
+    lessonId: string;
+    lessonName: string;
+    file: File;
+}): Promise<LessonSubmissionResponse> {
+    const { studentId, studentName, topicId, topicName, lessonId, lessonName, file } = params;
+
     const formData = new FormData();
     formData.append("studentId", studentId);
+    formData.append("studentName", studentName);
+    formData.append("topicId", topicId);
+    formData.append("topicName", topicName);
     formData.append("lessonId", lessonId);
+    formData.append("lessonName", lessonName);
     formData.append("file", file);
 
     const { data } = await apiClient.post<LessonSubmissionResponse>(
@@ -40,4 +48,8 @@ export async function getLatestSubmission(
         `/lesson-submissions/student/${studentId}/lesson/${lessonId}`
     );
     return data;
+}
+
+export async function deleteSubmission(submissionId: string): Promise<void> {
+    await apiClient.delete(`/lesson-submissions/${submissionId}`);
 }

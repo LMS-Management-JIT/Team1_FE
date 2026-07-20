@@ -3,18 +3,36 @@ import clsx from "clsx";
 import type {Lesson} from "../../../types/lesson.ts";
 import {FileSubmissionPanel} from "./FileSubmissionPanel.tsx";
 import {SafeHtmlContent} from "../../../components/lesson/common/SafeHtmlContent";
-import {autoFormatHeadings} from "../../../utils/autoFormatHeadings";
+import type {LessonSubmissionResponse} from "../../../services/lessonSubmissionService";
+import {QuizContent} from "./QuizContent.tsx";
+import type {QuizSubmissionResult} from "../../../types/quiz";
 
 interface PracticeContentProps {
     lesson: Lesson;
+    studentId: string;
+    existingSubmission: LessonSubmissionResponse | null | undefined;
     onSubmit: (file: File) => void;
+    onDeleteSubmission: () => void;
     isSubmitting: boolean;
+    isDeleting: boolean;
+    onQuizSubmitted?: (result: QuizSubmissionResult, attempts: number) => void;
+    isCompleted?: boolean; // BỔ SUNG DÒNG NÀY
 }
 
-type Tab = "assignment" | "submission";
+type Tab = "assignment" | "submission" | "quiz";
 
-export function PracticeContent({lesson, onSubmit, isSubmitting}: PracticeContentProps) {
-    const [tab, setTab] = useState<Tab>("submission");
+export function PracticeContent({
+                                    lesson,
+                                    studentId,
+                                    existingSubmission,
+                                    onSubmit,
+                                    onDeleteSubmission,
+                                    isSubmitting,
+                                    isDeleting,
+                                    onQuizSubmitted,
+                                    isCompleted,
+                                }: PracticeContentProps) {
+    const [tab, setTab] = useState<Tab>("assignment");
 
     return (
         <div className="rounded-xl border border-gray-100 bg-white p-6">
@@ -23,6 +41,7 @@ export function PracticeContent({lesson, onSubmit, isSubmitting}: PracticeConten
                     [
                         {key: "assignment", label: "Đề bài"},
                         {key: "submission", label: "Bài nộp của tôi"},
+                        {key: "quiz", label: "Quiz"},
                     ] as const
                 ).map((item) => (
                     <button
@@ -40,12 +59,26 @@ export function PracticeContent({lesson, onSubmit, isSubmitting}: PracticeConten
                 ))}
             </div>
 
-            {tab === "assignment" ? (
-                <SafeHtmlContent html={autoFormatHeadings(lesson.content)} fallback="Đề bài đang được cập nhật."/>
-            ) : (
+            {tab === "assignment" && (
+                <SafeHtmlContent html={lesson.content} fallback="Đề bài đang được cập nhật."/>
+            )}
+
+            {tab === "submission" && (
                 <FileSubmissionPanel
+                    existingSubmission={existingSubmission}
                     onSubmit={onSubmit}
+                    onDelete={onDeleteSubmission}
                     isSubmitting={isSubmitting}
+                    isDeleting={isDeleting}
+                />
+            )}
+
+            {tab === "quiz" && (
+                <QuizContent
+                    lessonId={lesson.id}
+                    studentId={studentId}
+                    onSubmitted={onQuizSubmitted}
+                    isCompleted={isCompleted}
                 />
             )}
         </div>
