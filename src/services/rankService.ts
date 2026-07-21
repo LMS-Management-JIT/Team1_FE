@@ -9,18 +9,39 @@ export interface RankResponse {
     trend: 'UP' | 'DOWN' | 'SAME';
     badges: string[];
 }
-
-export async function getLeaderboard(): Promise<RankResponse[]> {
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
-    const url = `${API_BASE_URL}/ranks/leaderboard`;
+// Hàm giả định: Gọi API khởi tạo rank (Backend cần hỗ trợ logic: có rồi thì bỏ qua, chưa có thì insert rank=0)
+export const initStudentRankIfNeeded = async (studentId: string) => {
     try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("Không thể tải bảng xếp hạng");
-        return await response.json();
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+        
+        // Thay đổi endpoint này theo đúng thiết kế API thực tế của backend bạn
+        await fetch(`${API_BASE_URL}/ranks/init`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ studentId, point: 0 }) 
+        });
     } catch (error) {
-        throw error;
+        console.error("Lỗi khi khởi tạo rank cho học viên:", error);
     }
-}
+};
+
+export const getLeaderboard = async () => {
+    try {
+        // apiClient sẽ tự động gắn token từ Cookie vào header
+        // Đường dẫn ở đây phụ thuộc vào VITE_API_BASE_URL trong apiClient của bạn. 
+        // Thường chỉ cần truyền '/ranks/leaderboard'
+        const response = await apiClient.get('/ranks/leaderboard'); 
+        
+        // Axios tự động parse JSON, nên ta chỉ cần lấy response.data
+        return response.data;
+    } catch (error: any) {
+        // Xử lý lỗi từ Axios
+        if (error.response && error.response.status === 401) {
+            throw new Error("Hết phiên đăng nhập. Vui lòng đăng nhập lại.");
+        }
+        throw new Error("Không thể tải bảng xếp hạng");
+    }
+};
 
 export async function addXpToRank(studentId: string, xp: number, sourceId?: string): Promise<void> {
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";

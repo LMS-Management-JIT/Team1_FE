@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Header } from "../../layouts/Header/Header";
 import { Trophy, ArrowUp, ArrowDown, Minus, Crown, Flame, Medal, Sparkles, Gift, Lock } from 'lucide-react';
-import { getLeaderboard, type RankResponse } from '../../services/rankService';
+// Nhớ import thêm hàm initStudentRankIfNeeded từ rankService nhé
+import { getLeaderboard, initStudentRankIfNeeded, type RankResponse } from '../../services/rankService';
 import { useAuth } from '../../services/authService';
 
 // ==========================================
@@ -148,23 +149,33 @@ const RewardProgress = ({ currentRank }: { currentRank: number }) => {
 // TRANG CHÍNH: RANK PAGE
 // ==========================================
 export default function RankPage() {
-    // 2. Lấy studentId động từ hook
-    const { studentId, isLoading: isAuthLoading } = useAuth();
+    const { studentId, user, isLoading: isAuthLoading } = useAuth();
     
     const [leaderboard, setLeaderboard] = useState<RankResponse[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // Cập nhật useEffect để khởi tạo dữ liệu
     useEffect(() => {
-        getLeaderboard().then(data => {
-            setLeaderboard(data);
-            setLoading(false);
-        }).catch(err => {
-            console.error("Lỗi lấy bxh:", err);
-            setLoading(false);
-        });
-    }, []);
+        if (!studentId) return;
 
-    // 3. Cập nhật điều kiện loading để chờ cả Auth
+        const loadLeaderboardData = async () => {
+            try {
+                // 1. Khởi tạo rank nếu học viên chưa tồn tại (API gọi ngầm)
+                await initStudentRankIfNeeded(studentId);
+                
+                // 2. Fetch danh sách leaderboard mới nhất
+                const data = await getLeaderboard();
+                setLeaderboard(data);
+            } catch (err) {
+                console.error("Lỗi lấy bxh:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadLeaderboardData();
+    }, [studentId]);
+
     if (loading || isAuthLoading) {
         return (
             <div className="flex flex-col h-screen bg-slate-50 items-center justify-center gap-4">
@@ -175,12 +186,35 @@ export default function RankPage() {
     }
 
     const top3 = leaderboard.slice(0, 3);
-    const others = leaderboard.slice(3);
+    let others = leaderboard.slice(3);
     const podiumOrder = top3.length === 3 ? [top3[1], top3[0], top3[2]] : top3;
     
-    // 4. Sửa STUDENT_ID thành studentId
-    const myRankIndex = leaderboard.findIndex(r => r.studentId === studentId);
-    const myRank = myRankIndex !== -1 ? leaderboard[myRankIndex] : null;
+    let myRankIndex = leaderboard.findIndex(r => r.studentId === studentId);
+    let myRank = myRankIndex !== -1 ? leaderboard[myRankIndex] : null;
+
+    // --- LOGIC GIAO DIỆN MỚI ---
+    // Nếu API DB bị delay và chưa trả về user hiện tại -> Tự tạo một rank giả 0 XP để hiển thị
+    // --- LOGIC GIAO DIỆN MỚI ---
+    if (!myRank && studentId) {
+        const lastRankNumber = leaderboard.length > 0 ? leaderboard[leaderboard.length - 1].currentRank : 0;
+        myRank = {
+            studentId: studentId,
+            // Sử dụng user.name, nếu chưa load kịp thì dùng mặc định
+            studentName: user?.username || "Học viên mới", 
+            // Có thể lấy luôn avatar của user nếu có, hoặc tạo tự động theo tên
+            avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.username || 'New')}&background=random`, 
+            totalXp: 0,
+            currentRank: lastRankNumber + 1,
+            trend: "SAME",
+            // Thêm badge TÂN BINH
+            badges: ["TÂN BINH"] 
+        } as unknown as RankResponse;
+        
+        // Push user vào cuối danh sách other
+        others = [...others, myRank];
+        myRankIndex = leaderboard.length; // Index ảo của bạn
+    }
+
     const userAboveMe = myRankIndex > 0 ? leaderboard[myRankIndex - 1] : null;
 
     const getTrendBadge = (trend: string) => {
@@ -213,9 +247,7 @@ export default function RankPage() {
                         </p>
                     </div>
                     
-                    {/* 👇 ĐÃ ĐỔI mt-10 THÀNH mt-20 Ở DÒNG DƯỚI ĐÂY ĐỂ TĂNG KHOẢNG CÁCH 👇 */}
-                    
-                    {/* ── 1. KHU VỰC DANH DỰ (PODIUM TOP 3) ĐÃ ĐƯỢC KẾT NỐI ── */}
+                    {/* ── 1. KHU VỰC DANH DỰ (PODIUM TOP 3) ── */}
                     <div className="relative flex justify-center items-end gap-2 sm:gap-4 md:gap-8 mt-20 h-[280px] sm:h-[320px] pb-6">
                         
                         {/* Bệ đỡ Podium (Platform) giúp 3 cột không bị bay lơ lửng */}
