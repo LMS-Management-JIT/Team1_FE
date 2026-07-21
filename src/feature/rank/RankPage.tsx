@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Header } from "../../layouts/Header/Header";
 import { Trophy, ArrowUp, ArrowDown, Minus, Crown, Flame, Medal, Sparkles, Gift, Lock } from 'lucide-react';
 import { getLeaderboard, type RankResponse } from '../../services/rankService';
-
-const STUDENT_ID = "CqUc2q8I1oObbXRpGwtN"; // ID của User đang đăng nhập
+import { useAuth } from '../../services/authService';
 
 // ==========================================
 // COMPONENT 1: HIỆU ỨNG MƯA CODE (CODE RAIN)
@@ -149,6 +148,9 @@ const RewardProgress = ({ currentRank }: { currentRank: number }) => {
 // TRANG CHÍNH: RANK PAGE
 // ==========================================
 export default function RankPage() {
+    // 2. Lấy studentId động từ hook
+    const { studentId, isLoading: isAuthLoading } = useAuth();
+    
     const [leaderboard, setLeaderboard] = useState<RankResponse[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -157,12 +159,13 @@ export default function RankPage() {
             setLeaderboard(data);
             setLoading(false);
         }).catch(err => {
-            console.error("Lỗi lấy bảng xếp hạng:", err);
+            console.error("Lỗi lấy bxh:", err);
             setLoading(false);
         });
     }, []);
 
-    if (loading) {
+    // 3. Cập nhật điều kiện loading để chờ cả Auth
+    if (loading || isAuthLoading) {
         return (
             <div className="flex flex-col h-screen bg-slate-50 items-center justify-center gap-4">
                 <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
@@ -174,8 +177,9 @@ export default function RankPage() {
     const top3 = leaderboard.slice(0, 3);
     const others = leaderboard.slice(3);
     const podiumOrder = top3.length === 3 ? [top3[1], top3[0], top3[2]] : top3;
-
-    const myRankIndex = leaderboard.findIndex(r => r.studentId === STUDENT_ID);
+    
+    // 4. Sửa STUDENT_ID thành studentId
+    const myRankIndex = leaderboard.findIndex(r => r.studentId === studentId);
     const myRank = myRankIndex !== -1 ? leaderboard[myRankIndex] : null;
     const userAboveMe = myRankIndex > 0 ? leaderboard[myRankIndex - 1] : null;
 
@@ -271,14 +275,14 @@ export default function RankPage() {
 
                         <div className="divide-y divide-slate-100/80">
                             {others.map((user) => (
-                                <div key={user.studentId} className={`flex items-center gap-3 sm:gap-6 p-4 sm:px-6 transition-colors duration-200 hover:bg-orange-50/50 ${user.studentId === STUDENT_ID ? 'bg-orange-50 border-l-4 border-l-orange-500' : 'border-l-4 border-l-transparent'}`}>
+                                <div key={user.studentId} className={`flex items-center gap-3 sm:gap-6 p-4 sm:px-6 transition-colors duration-200 hover:bg-orange-50/50 ${user.studentId === studentId ? 'bg-orange-50 border-l-4 border-l-orange-500' : 'border-l-4 border-l-transparent'}`}>
                                     <div className="w-6 sm:w-8 font-black text-slate-400 text-center text-sm sm:text-base">{user.currentRank}</div>
                                     <div className="w-8 flex justify-center shrink-0">{getTrendBadge(user.trend)}</div>
                                     <img src={user.avatarUrl} alt="avatar" className="w-10 h-10 sm:w-12 sm:h-12 rounded-full ring-2 ring-slate-100 object-cover shrink-0" />
                                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                                         <div className="flex items-center gap-2 flex-wrap">
-                                            <h4 className={`font-bold text-sm sm:text-base truncate ${user.studentId === STUDENT_ID ? 'text-orange-700' : 'text-slate-800'}`}>
-                                                {user.studentName} {user.studentId === STUDENT_ID && "(Bạn)"}
+                                            <h4 className={`font-bold text-sm sm:text-base truncate ${user.studentId === studentId ? 'text-orange-700' : 'text-slate-800'}`}>
+                                                {user.studentName} {user.studentId === studentId && "(Bạn)"}
                                             </h4>
                                             {user.badges && user.badges.length > 0 && (
                                                 <div className="hidden sm:flex gap-1.5">
