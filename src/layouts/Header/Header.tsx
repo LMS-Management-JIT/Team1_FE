@@ -7,10 +7,12 @@ import { useAuth } from "../../services/authService";
 import logo from "../../assets/codegym_logo.jpg";
 import { useAuthContext } from "../../feature/auth/context/AuthContext.tsx";
 import { GlobalSearchBox } from "../../components/search/GlobalSearchBox";
+import { useChatContext } from "../../feature/chat/context/ChatContext";
 
 export function Header() {
 
     const { user, studentId } = useAuthContext();
+    const { openChat } = useChatContext();
 
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -93,11 +95,12 @@ export function Header() {
                         <Trophy size={16} />
                     </Link>
 
-                    <button className="relative hidden h-8 w-8 place-items-center rounded-full bg-white/20 transition hover:bg-white/30 sm:grid">
+                    <button
+                        onClick={() => openChat()}
+                        title="Tin nhắn"
+                        className="relative hidden h-8 w-8 place-items-center rounded-full bg-white/20 transition hover:bg-white/30 sm:grid"
+                    >
                         <MessageCircle size={16} />
-                        <span className="absolute -right-1 -top-1 rounded-full bg-red-500 px-1 text-[10px]">
-                            3
-                        </span>
                     </button>
 
                     <button className="relative hidden h-8 w-8 place-items-center rounded-full bg-white/20 transition hover:bg-white/30 sm:grid">
