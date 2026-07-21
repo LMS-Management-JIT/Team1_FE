@@ -1,19 +1,17 @@
-import {useEffect, useState, useRef} from 'react'
-import {ChevronLeft, ChevronRight, Grid3x3, Home, Layers, Lock, Play, Pause, Server, Zap, List, BookOpen} from 'lucide-react'
-import {Header} from "../../layouts/Header/Header"
-import type {ModuleResponse} from "../../types/module";
-import type {DashboardCourse} from "../../types/dashboard";
-import {getModulesByCourseId} from "../../services/moduleService";
-import {getStudentCourses} from "../../services/dashboardService";
-import {getTopicsByModule} from "../../services/topicService";
-import {getProgressByStudent} from "../../services/lessonProgressService";
-
-import {useNavigate, useParams} from 'react-router-dom';
-
-const STUDENT_ID = "enoEBcYAuvnZNoXv0u8v";
+import { useEffect, useState, useRef } from 'react'
+import { ChevronLeft, ChevronRight, Grid3x3, Home, Layers, Lock, Play, Pause, Server, Zap, List, BookOpen, Columns } from 'lucide-react'
+import { Header } from "../../layouts/Header/Header"
+import type { ModuleResponse } from "../../types/module";
+import type { DashboardCourse } from "../../types/dashboard";
+import { getModulesByCourseId } from "../../services/moduleService";
+import { getStudentCourses } from "../../services/dashboardService";
+import { getTopicsByModule } from "../../services/topicService";
+import { getProgressByStudent } from "../../services/lessonProgressService";
+import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from "../../services/authService";
 
 // ==========================================
-// COMPONENT: TRÌNH PHÁT VIDEO TÙY CHỈNH (HACK DỪNG 50%)
+// COMPONENT: TRÌNH PHÁT VIDEO TÙY CHỈNH
 // ==========================================
 const PreviewVideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -41,12 +39,10 @@ const PreviewVideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
         const video = videoRef.current;
         if (!video) return;
         
-        // Cắt nửa thời lượng video làm giới hạn (vd: 10s -> 5s)
         const maxTime = video.duration / 2;
-        
         if (video.currentTime >= maxTime) {
             video.pause();
-            video.currentTime = maxTime; // Dừng chính xác ở 50%
+            video.currentTime = maxTime; 
             setIsPlaying(false);
         }
         
@@ -57,7 +53,6 @@ const PreviewVideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
     const handleLoadedMetadata = () => {
         const video = videoRef.current;
         if (!video) return;
-        // Hiển thị thời lượng giả (chỉ bằng 50% thời lượng thật)
         setDurationDisplay(formatTime(video.duration / 2));
     };
 
@@ -81,22 +76,18 @@ const PreviewVideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
                 onEnded={() => setIsPlaying(false)}
             />
             
-            {/* Thanh điều khiển tùy chỉnh (Custom Controls) */}
             <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                 <div className="flex items-center gap-3">
                     <button onClick={togglePlay} className="text-white hover:text-orange-400 transition">
                         {isPlaying ? <Pause className="w-5 h-5 fill-current"/> : <Play className="w-5 h-5 fill-current"/>}
                     </button>
-                    {/* Thanh Progress */}
                     <div className="flex-1 h-1.5 bg-white/30 rounded-full overflow-hidden cursor-pointer relative" onClick={handleSeek}>
                         <div className="absolute top-0 left-0 bottom-0 bg-orange-500" style={{width: `${progress}%`}} />
                     </div>
-                    {/* Hiển thị thời gian đã hack */}
                     <span className="text-white text-xs font-mono">{currentTimeDisplay} / {durationDisplay}</span>
                 </div>
             </div>
 
-            {/* Nút Play to ở giữa khi tạm dừng */}
             {!isPlaying && (
                 <div onClick={togglePlay} className="absolute inset-0 flex items-center justify-center pointer-events-auto cursor-pointer">
                     <div className="w-14 h-14 bg-orange-500/90 backdrop-blur-md rounded-full border border-white/20 flex items-center justify-center text-white hover:scale-110 transition shadow-lg shadow-orange-500/30">
@@ -109,7 +100,7 @@ const PreviewVideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
 }
 
 // ==========================================
-// LOGIC TÍNH TOÁN ICON THÔNG MINH THEO TỪ KHÓA
+// LOGIC TÍNH TOÁN ICON THÔNG MINH
 // ==========================================
 const getCourseStyles = (course: DashboardCourse, index: number) => {
     const textToSearch = `${course.courseName} ${course.description}`.toLowerCase();
@@ -176,28 +167,32 @@ const SidebarCourseCard = ({course, index, isActive, onClick}: { course: Dashboa
 // TRANG CHÍNH: MODULES IN COURSE PAGE
 // ==========================================
 export default function ModulesInCoursePage() {
-    const {courseId} = useParams<{ courseId: string }>();
+    const { studentId } = useAuth();
+    const { courseId } = useParams<{ courseId: string }>();
     const navigate = useNavigate();
     
     const [myCourses, setMyCourses] = useState<DashboardCourse[]>([]);
     const [activeCourseId, setActiveCourseId] = useState<string>("");
     
     const [modules, setModules] = useState<ModuleResponse[]>([]);
+    const [displayModules, setDisplayModules] = useState<any[]>([]);
     const [isLoadingModules, setIsLoadingModules] = useState<boolean>(false);
     
-    // Lưu số lượng Topics và Tiến độ thực tế
     const [topicCounts, setTopicCounts] = useState<Record<string, number>>({});
     const [moduleProgress, setModuleProgress] = useState<Record<string, { total: number, completed: number }>>({});
     
-    const [isGridLayout, setIsGridLayout] = useState<boolean>(false);
+    // Cập nhật State cho Bố cục: slider | grid | list
+    const [layout, setLayout] = useState<'slider' | 'grid' | 'list'>('slider');
     const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
 
     useEffect(() => {
-        getStudentCourses(STUDENT_ID).then(data => {
+        if (!studentId) return; 
+
+        getStudentCourses(studentId).then(data => {
             setMyCourses(data);
             if (data.length > 0) setActiveCourseId(courseId || data[0].id);
         }).catch(err => console.error("Lỗi danh sách khóa học:", err));
-    }, [courseId]);
+    }, [courseId, studentId]);
 
     useEffect(() => {
         if (!activeCourseId) return;
@@ -218,12 +213,11 @@ export default function ModulesInCoursePage() {
     useEffect(() => {
         let active = true;
         const fetchTopicsAndVideo = async () => {
-            if (modules.length === 0) return;
+            if (modules.length === 0 || !studentId) return; 
             setPreviewVideoUrl(null);
             
             try {
-                // 1. GỌI API LẤY TIẾN ĐỘ HỌC CỦA STUDENT NÀY
-                const progressData = await getProgressByStudent(STUDENT_ID).catch(() => []);
+                const progressData = await getProgressByStudent(studentId).catch(() => []);
                 const progressArray = Array.isArray(progressData) ? progressData : (progressData.data || []);
                 const completedLessonIds = new Set(
                     progressArray.filter((p: any) => p.completed).map((p: any) => p.lessonId || p.lesson_id)
@@ -235,13 +229,13 @@ export default function ModulesInCoursePage() {
                 
                 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
                 
-                // Lấy Topics của các module 
                 const topicResults = await Promise.all(
                     modules.map(mod => getTopicsByModule(mod.id).catch(() => []))
                 );
 
-                // 2. TÍNH TOÁN DYNAMIC PROGRESS CHO TỪNG MODULE
-                modules.forEach((mod, idx) => {
+                let isPreviousCompleted = true; 
+
+                const enhancedModules = modules.map((mod, idx) => {
                     const topics = topicResults[idx] || [];
                     counts[mod.id] = topics.length;
 
@@ -256,20 +250,31 @@ export default function ModulesInCoursePage() {
                             });
                         }
                     });
+                    
                     progressMap[mod.id] = { total: totalLessons, completed: completedLessons };
+
+                    const isModuleCompleted = totalLessons > 0 ? (completedLessons === totalLessons) : true;
+                    const isUnlocked = isPreviousCompleted;
+                    isPreviousCompleted = isModuleCompleted;
+
+                    return {
+                        ...mod,
+                        isUnlocked,
+                        isCompleted: isModuleCompleted
+                    };
                 });
 
                 if (active) {
                     setTopicCounts(counts);
                     setModuleProgress(progressMap);
+                    setDisplayModules(enhancedModules);
                 }
 
-                // Quét tìm Video bài giảng
                 for (const topics of topicResults) {
                     if (foundVideo || !topics) continue;
                     for (const topic of topics) {
                         if (foundVideo) break;
-                        const lecture = topic.lessons?.find(l => l.type === "LECTURE");
+                        const lecture = topic.lessons?.find((l: any) => l.type === "LECTURE");
                         if (lecture) {
                             const res = await fetch(`${API_BASE_URL}/lessons/${lecture.id}`);
                             if (res.ok) {
@@ -289,7 +294,7 @@ export default function ModulesInCoursePage() {
         
         fetchTopicsAndVideo();
         return () => { active = false; };
-    }, [modules]);
+    }, [modules, studentId]);
 
     const handleScroll = (direction: 'left' | 'right') => {
         const container = document.getElementById('modules-scroll')
@@ -303,7 +308,6 @@ export default function ModulesInCoursePage() {
         courseName: "Đang tải dữ liệu...", description: "Vui lòng chờ trong giây lát..."
     };
 
-    // TÍNH TỔNG TIẾN ĐỘ TOÀN KHÓA HỌC
     const totalCourseLessons = Object.values(moduleProgress).reduce((acc, curr) => acc + curr.total, 0);
     const totalCourseCompleted = Object.values(moduleProgress).reduce((acc, curr) => acc + curr.completed, 0);
     const coursePercent = totalCourseLessons > 0 ? Math.round((totalCourseCompleted / totalCourseLessons) * 100) : 0;
@@ -355,12 +359,30 @@ export default function ModulesInCoursePage() {
                             <span className="text-slate-700 font-semibold truncate max-w-[180px] sm:max-w-none">{activeCourseData.courseName}</span>
                         </div>
                         
-                        <button 
-                            onClick={() => setIsGridLayout(!isGridLayout)}
-                            className="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-orange-600 transition px-3 py-2 rounded-lg hover:bg-orange-50 border border-transparent hover:border-orange-200">
-                            {isGridLayout ? <List className="w-4 h-4"/> : <Grid3x3 className="w-4 h-4"/>}
-                            <span className="hidden sm:inline">Bố cục</span>
-                        </button>
+                        {/* TRÌNH ĐIỀU KHIỂN BỐ CỤC MỚI (SLIDER / GRID / LIST) */}
+                        <div className="flex items-center bg-slate-100/80 p-1 rounded-lg">
+                            <button 
+                                onClick={() => setLayout('slider')} 
+                                className={`p-1.5 rounded-md transition-all ${layout === 'slider' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/50'}`}
+                                title="Trượt ngang"
+                            >
+                                <Columns className="w-4 h-4"/>
+                            </button>
+                            <button 
+                                onClick={() => setLayout('grid')} 
+                                className={`p-1.5 rounded-md transition-all ${layout === 'grid' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/50'}`}
+                                title="Dạng lưới"
+                            >
+                                <Grid3x3 className="w-4 h-4"/>
+                            </button>
+                            <button 
+                                onClick={() => setLayout('list')} 
+                                className={`p-1.5 rounded-md transition-all ${layout === 'list' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/50'}`}
+                                title="Dạng danh sách"
+                            >
+                                <List className="w-4 h-4"/>
+                            </button>
+                        </div>
                     </header>
 
                     <div className="p-6 sm:p-8 flex flex-col gap-8 max-w-[1400px] w-full mx-auto">
@@ -442,10 +464,11 @@ export default function ModulesInCoursePage() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">Danh sách Module</h2>
-                                    <p className="text-sm text-slate-500 mt-1">{modules.length} module</p>
+                                    <p className="text-sm text-slate-500 mt-1">{displayModules.length} module</p>
                                 </div>
                                 
-                                {!isGridLayout && (
+                                {/* Nút mũi tên chỉ hiện nếu đang ở chế độ SLIDER */}
+                                {layout === 'slider' && (
                                     <div className="flex items-center gap-2">
                                         <button onClick={() => handleScroll('left')} className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-orange-600 hover:border-orange-200 hover:bg-orange-50 transition active:scale-95">
                                             <ChevronLeft className="w-4 h-4"/>
@@ -457,26 +480,91 @@ export default function ModulesInCoursePage() {
                                 )}
                             </div>
 
+                            {/* CONTAINER THEO DYNAMIC LAYOUT */}
                             <div id="modules-scroll" 
-                                 className={isGridLayout 
-                                     ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 pt-4 pb-6" 
-                                     : "flex gap-5 overflow-x-auto pt-4 pb-6 px-4 -mx-4 snap-x snap-mandatory scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                                 className={
+                                     layout === 'grid' 
+                                         ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 pt-4 pb-6" 
+                                         : layout === 'list'
+                                         ? "flex flex-col gap-4 pt-4 pb-6"
+                                         : "flex gap-5 overflow-x-auto pt-4 pb-6 px-4 -mx-4 snap-x snap-mandatory scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
                                  }>
                                 {isLoadingModules ? (
                                     <div className="text-slate-500 font-medium px-4">Đang tải danh sách module...</div>
-                                ) : modules.length === 0 ? (
+                                ) : displayModules.length === 0 ? (
                                     <div className="text-slate-500 font-medium px-4">Chưa có module nào trong khóa học này.</div>
                                 ) : (
-                                    modules.map((mod, index) => {
-                                        const isFirst = index === 0;
+                                    displayModules.map((mod, index) => {
+                                        const isUnlocked = mod.isUnlocked; 
                                         const displayNumber = String(index + 1).padStart(2, '0');
-                                        const cardWidthClass = isGridLayout ? 'w-full' : 'w-[280px] sm:w-[300px] shrink-0 snap-start';
                                         
-                                        // TÍNH % RIÊNG CỦA TỪNG MODULE
                                         const modProgress = moduleProgress[mod.id] || { total: 0, completed: 0 };
                                         const modPercent = modProgress.total > 0 ? Math.round((modProgress.completed / modProgress.total) * 100) : 0;
 
-                                        if (isFirst) {
+                                        // RENDER GIAO DIỆN DẠNG LIST
+                                        if (layout === 'list') {
+                                            return (
+                                                <div 
+                                                    key={mod.id} 
+                                                    onClick={() => isUnlocked && navigate(`/topics/${mod.id}`, { state: { courseId: activeCourseId, courseName: activeCourseData.courseName, moduleName: mod.moduleName } })} 
+                                                    className={`w-full flex items-center gap-3 sm:gap-5 p-3 sm:p-4 rounded-2xl border transition-all duration-300 ${isUnlocked ? 'bg-white border-slate-200 hover:border-orange-300 hover:shadow-md cursor-pointer' : 'bg-slate-50 border-slate-100 opacity-75 cursor-not-allowed group'}`}
+                                                >
+                                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg shrink-0 ${isUnlocked ? 'bg-orange-50 text-orange-500' : 'bg-slate-100 text-slate-400'}`}>
+                                                        {displayNumber}
+                                                    </div>
+                                                    
+                                                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <h3 className={`text-base font-bold truncate leading-none ${isUnlocked ? 'text-slate-900' : 'text-slate-500'}`}>{mod.moduleName}</h3>
+                                                            {isUnlocked ? (
+                                                                mod.isCompleted ? (
+                                                                    <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full shrink-0">Đã xong</span>
+                                                                ) : (
+                                                                    <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100 shrink-0">Đang học</span>
+                                                                )
+                                                            ) : null}
+                                                        </div>
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="text-xs text-slate-500 truncate max-w-[200px] sm:max-w-md">{mod.description || "Chưa có mô tả cho module này."}</span>
+                                                            <div className="hidden sm:flex items-center gap-1 text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+                                                                <BookOpen size={10}/> {topicCounts[mod.id] || 0}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {isUnlocked ? (
+                                                        <div className="flex items-center gap-4 shrink-0 pl-2 border-l border-slate-100">
+                                                            <div className="hidden md:flex flex-col items-end gap-1.5 w-32">
+                                                                <span className="text-[10px] font-bold text-slate-400">{modPercent}% Hoàn thành</span>
+                                                                <div className="w-full h-1.5 bg-orange-50 rounded-full overflow-hidden">
+                                                                    <div className="h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full" style={{ width: `${modPercent}%` }}/>
+                                                                </div>
+                                                            </div>
+                                                            <button className="w-10 h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center hover:bg-orange-500 hover:text-white transition-colors shrink-0">
+                                                                <Play className="w-4 h-4 fill-current ml-0.5"/>
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center gap-4 shrink-0 pl-2 border-l border-slate-100">
+                                                            <div className="hidden md:flex flex-col items-end gap-1.5 w-32">
+                                                                <span className="text-[10px] font-bold text-slate-400">Yêu cầu module trước</span>
+                                                                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                                    <div className="h-full bg-slate-200 rounded-full" style={{ width: `0%` }}/>
+                                                                </div>
+                                                            </div>
+                                                            <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center shrink-0">
+                                                                <Lock className="w-4 h-4" strokeWidth={2.5}/>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )
+                                        }
+
+                                        // RENDER GIAO DIỆN DẠNG SLIDER VÀ GRID (Mặc định)
+                                        const cardWidthClass = layout === 'grid' ? 'w-full' : 'w-[280px] sm:w-[300px] shrink-0 snap-start';
+                                        
+                                        if (isUnlocked) {
                                             return (
                                                 <div key={mod.id} onClick={() => navigate(`/topics/${mod.id}`, { state: { courseId: activeCourseId, courseName: activeCourseData.courseName, moduleName: mod.moduleName } })} className={`${cardWidthClass} cursor-pointer`}>
                                                     <div className="h-full bg-white rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden shadow-lg hover:shadow-xl shadow-orange-500/10 ring-2 ring-orange-500 hover:-translate-y-1 transition-all duration-300">
@@ -488,8 +576,14 @@ export default function ModulesInCoursePage() {
                                                                 {displayNumber}
                                                             </div>
                                                             <div className="bg-orange-50 text-orange-500 px-3 py-1.5 rounded-lg border border-orange-200 flex items-center gap-1.5">
-                                                                <div className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse"/>
-                                                                <span className="text-xs font-bold">Đang học</span>
+                                                                {mod.isCompleted ? (
+                                                                    <span className="text-xs font-bold text-green-600">Đã xong ✓</span>
+                                                                ) : (
+                                                                    <>
+                                                                        <div className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse"/>
+                                                                        <span className="text-xs font-bold">Đang học</span>
+                                                                    </>
+                                                                )}
                                                             </div>
                                                         </div>
                                                         <div className="flex flex-col gap-1.5 relative z-10">
@@ -524,7 +618,7 @@ export default function ModulesInCoursePage() {
                                                             <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center font-bold text-base">
                                                                 {displayNumber}
                                                             </div>
-                                                            <div className="bg-slate-100 text-slate-400 p-2 rounded-xl border border-slate-200">
+                                                            <div className="bg-slate-100 text-slate-400 p-2 rounded-xl border border-slate-200 flex items-center justify-center">
                                                                 <Lock className="w-4 h-4" strokeWidth={2.5}/>
                                                             </div>
                                                         </div>
@@ -545,7 +639,7 @@ export default function ModulesInCoursePage() {
                                                                 <div className="h-full bg-slate-300 rounded-full" style={{ width: `${modPercent}%` }}/>
                                                             </div>
                                                             <button className="w-full py-2.5 bg-slate-100 text-slate-400 text-xs font-bold rounded-lg cursor-not-allowed" disabled>
-                                                                Bài Khóa - Yêu cầu hoàn thành module trước
+                                                                Bài Khóa - Hoàn thành module trước
                                                             </button>
                                                         </div>
                                                     </div>
