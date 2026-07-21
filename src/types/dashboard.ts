@@ -17,6 +17,7 @@ export interface DashboardCourseProgress {
 
 export interface DashboardTeacher {
     id: string;
+    accountId: string;
     profileId: string;
     fullName: string;
     phoneNumber?: string;
