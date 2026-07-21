@@ -1,5 +1,6 @@
-import { X, Phone, MapPin, UserRound, GraduationCap } from "lucide-react";
+import { X, Phone, MapPin, UserRound, GraduationCap, MessageCircle } from "lucide-react";
 import type { DashboardTeacher } from "../../../../types/dashboard";
+import { useChatContext } from "../../../chat/context/ChatContext";
 
 interface TeacherProfileModalProps {
     teacher: DashboardTeacher | null;
@@ -7,7 +8,15 @@ interface TeacherProfileModalProps {
 }
 
 export function TeacherProfileModal({ teacher, onClose }: TeacherProfileModalProps) {
+    const { openChat } = useChatContext();
+
     if (!teacher) return null;
+
+    const handleMessage = () => {
+        if (!teacher.accountId) return;
+        onClose();
+        openChat(teacher.accountId);
+    };
 
     return (
         <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40 px-4">
@@ -55,6 +64,16 @@ export function TeacherProfileModal({ teacher, onClose }: TeacherProfileModalPro
                         {teacher.certifications || "Chưa có thông tin chứng chỉ."}
                     </p>
                 </div>
+
+                <button
+                    type="button"
+                    onClick={handleMessage}
+                    disabled={!teacher.accountId}
+                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#ff6b13] py-3 text-sm font-semibold text-white transition hover:bg-[#e05f0f] disabled:opacity-50"
+                >
+                    <MessageCircle size={18} />
+                    Nhắn tin
+                </button>
             </section>
         </div>
     );
