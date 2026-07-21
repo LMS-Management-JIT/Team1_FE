@@ -9,6 +9,7 @@ import { getTopicsByModule } from "../../services/topicService";
 import { getProgressByStudent } from "../../services/lessonProgressService";
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from "../../services/authService";
+import { initStudentRankIfNeeded } from "../../services/rankService";
 
 // ==========================================
 // COMPONENT: TRÌNH PHÁT VIDEO TÙY CHỈNH
@@ -186,7 +187,11 @@ export default function ModulesInCoursePage() {
     const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
 
     useEffect(() => {
+        // Nếu chưa có studentId thì return luôn để không gọi API lỗi
         if (!studentId) return; 
+
+        // 2. Gọi hàm khởi tạo Rank ngầm ở background (Không dùng await để không làm chậm trang)
+        initStudentRankIfNeeded(studentId);
 
         getStudentCourses(studentId).then(data => {
             setMyCourses(data);
