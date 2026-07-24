@@ -1,4 +1,4 @@
-import {Bell, Menu, X, LogOut, Trophy, MessageCircle} from "lucide-react";
+import {Menu, X, LogOut, Trophy, MessageCircle} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import clsx from "clsx";
@@ -8,6 +8,7 @@ import logo from "../../assets/codegym_logo.jpg";
 import { useAuthContext } from "../../feature/auth/context/AuthContext.tsx";
 import { GlobalSearchBox } from "../../components/search/GlobalSearchBox";
 import { useChatContext } from "../../feature/chat/context/ChatContext";
+import { NotificationBell } from "../../components/notification/NotificationBell";
 
 export function Header() {
 
@@ -103,12 +104,7 @@ export function Header() {
                         <MessageCircle size={16} />
                     </button>
 
-                    <button className="relative hidden h-8 w-8 place-items-center rounded-full bg-white/20 transition hover:bg-white/30 sm:grid">
-                        <Bell size={16} />
-                        <span className="absolute -right-1 -top-1 rounded-full bg-red-500 px-1 text-[10px]">
-                            5
-                        </span>
-                    </button>
+                    <NotificationBell studentId={studentId} />
 
                     <div className="relative">
                         <button
