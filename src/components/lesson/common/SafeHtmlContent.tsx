@@ -36,20 +36,19 @@ export function SafeHtmlContent({
         });
     }, [html]);
 
-    // Sau khi HTML đã render vào DOM thật, quét toàn bộ khối <pre><code> để tô màu cú pháp
     useEffect(() => {
         if (!containerRef.current) return;
 
         containerRef.current.querySelectorAll("pre code").forEach((block) => {
             const el = block as HTMLElement;
-
-            // Một số nội dung cũ bị gắn sẵn class "language-undefined" (do lúc soạn bài
-            // chưa chọn ngôn ngữ, biến lang bị undefined khi build class="language-${lang}").
-            // highlight.js sẽ cố tìm ngôn ngữ tên "undefined", không thấy -> warn và bỏ tô màu.
-            // Xoá class này đi để highlight.js tự động nhận diện ngôn ngữ (auto-detect) thay vào đó.
+            el.removeAttribute("data-highlighted");
             el.classList.remove("language-undefined");
 
-            hljs.highlightElement(el);
+            try {
+                hljs.highlightElement(el);
+            } catch (err) {
+                console.warn("[SafeHtmlContent] Bỏ qua 1 khối code do lỗi highlight:", err);
+            }
         });
     }, [cleanHtml]);
 
@@ -62,7 +61,6 @@ export function SafeHtmlContent({
             ref={containerRef}
             className={clsx(
                 "max-w-none text-[15px] leading-7 text-gray-700",
-                // Style heading trực tiếp bằng selector con, KHÔNG phụ thuộc plugin @tailwindcss/typography
                 "[&_h1]:mt-6 [&_h1]:mb-3 [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-gray-900",
                 "[&_h2]:mt-6 [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-gray-900",
                 "[&_h3]:mt-5 [&_h3]:mb-2 [&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-orange-600",
@@ -74,10 +72,9 @@ export function SafeHtmlContent({
                 "[&_a]:text-orange-600 [&_a]:underline",
                 "[&_strong]:font-semibold [&_strong]:text-gray-900",
                 "[&_blockquote]:border-l-4 [&_blockquote]:border-orange-300 [&_blockquote]:bg-orange-50 [&_blockquote]:px-4 [&_blockquote]:py-2 [&_blockquote]:text-gray-600",
-                // Chỉ style code inline (không nằm trong <pre>) — tránh đè màu cú pháp của highlight.js
                 "[&_:not(pre)>code]:rounded [&_:not(pre)>code]:bg-gray-100 [&_:not(pre)>code]:px-1.5 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:text-orange-600 [&_:not(pre)>code]:font-mono [&_:not(pre)>code]:text-[13px]",
-                // Khối <pre> giữ p-0: để class "hljs" (do highlight.js gắn) tự set padding/màu nền theo theme vs2015.css, tránh double padding
-                "[&_pre]:mb-4 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-[#1e1e1e] [&_pre]:p-0",
+                "[&_pre]:mb-4 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-[#1e1e1e] [&_pre]:p-0 [&_pre]:font-mono",
+                "[&_pre_code]:font-mono",
                 className
             )}
             // eslint-disable-next-line react/no-danger -- html đã qua DOMPurify.sanitize ở trên
