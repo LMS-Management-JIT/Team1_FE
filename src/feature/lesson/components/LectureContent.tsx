@@ -1,9 +1,8 @@
 import { Play, Pause, Volume2, VolumeX, Maximize, Sparkles, CheckCircle2 } from "lucide-react";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import type { Lesson } from "../../../types/lesson.ts";
 import { SafeHtmlContent } from "../../../components/lesson/common/SafeHtmlContent";
 import { highlightTimestamps } from "../../../utils/highlightTimestamps";
-import { formatDuration } from "../../../utils/formatDuration";
 import { toast } from "sonner";
 
 interface LectureContentProps {

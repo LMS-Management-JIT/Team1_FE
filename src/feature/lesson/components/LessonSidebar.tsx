@@ -13,7 +13,7 @@ interface LessonSidebarProps {
 }
 
 const typeIconMap = { READING: BookOpen, LECTURE: PlayCircle, PRACTICE: Code2, QUIZ: HelpCircle };
-function getLessonMeta(lesson: LessonSummary) { /* Giữ nguyên */ return {label: "Bài", unit: "phút"}; }
+function getLessonMeta() { return {label: "Bài", unit: "phút"}; }
 
 export function LessonSidebar({
     topicName, lessons, currentLessonId, completedLessonIds, onSelectLesson, backToTopicsHref,
@@ -80,7 +80,7 @@ export function LessonSidebar({
                 {sortedLessons.map((lesson) => {
                     const isCurrent = lesson.id === currentLessonId;
                     const isCompleted = completedLessonIds.has(lesson.id);
-                    const meta = getLessonMeta(lesson);
+                    const meta = getLessonMeta();
                     const TypeIcon = typeIconMap[lesson.type as keyof typeof typeIconMap] ?? BookOpen;
 
                     // Đã hoàn thành = xanh lá · đang xem = cam đặc · còn lại = xám

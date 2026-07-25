@@ -22,6 +22,7 @@ import { PracticeContent } from "../components/PracticeContent.tsx";
 import { Loading } from "../../../components/lesson/ui/Loading";
 import { addXpToRank } from "../../../services/rankService";
 import { useAuthContext } from "../../../feature/auth/context/AuthContext"; // 🔑 THÊM
+import { LessonAiAssistant } from "../components/LessonAiAssistant";
 
 export function LessonDetailPage() {
     const { topicId, lessonId } = useParams<{ topicId: string; lessonId: string }>();
@@ -130,7 +131,7 @@ export function LessonDetailPage() {
                 toast.success(`Đã nộp file "${file.name}" thành công`);
                 handleLessonComplete(20);
             }
-        } catch (error) {
+        } catch {
             toast.error("Nộp bài thất bại, vui lòng thử lại");
         }
     };
@@ -238,7 +239,7 @@ export function LessonDetailPage() {
                                 try {
                                     await addXpToRank(studentId, 30, `TOPIC_${topic.id}`);
                                     toast.success("🏆 CHÚC MỪNG! Bạn đã hoàn thành trọn vẹn chương học và được thưởng +30 XP!", { duration: 5000 });
-                                } catch (e) {}
+                                } catch {}
 
                                 navigate(topicsListHref || "/");
                             }}
@@ -251,6 +252,12 @@ export function LessonDetailPage() {
                     />
                 </div>
             </div>
+            <LessonAiAssistant
+                topicId={topic.id}
+                topicName={topic.topicName}
+                lessonId={lesson.id}
+                lessonTitle={lesson.lessonName}
+            />
         </div>
     );
 }
