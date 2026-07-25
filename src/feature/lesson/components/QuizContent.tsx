@@ -9,7 +9,7 @@ interface QuizContentProps {
     lessonId: string;
     studentId: string;
     onSubmitted?: (result: QuizSubmissionResult, attempts: number) => void;
-    isCompleted?: boolean; // BỔ SUNG PROP
+    isCompleted?: boolean;
 }
 
 export function QuizContent({lessonId, studentId, onSubmitted, isCompleted}: QuizContentProps) {
@@ -37,23 +37,10 @@ export function QuizContent({lessonId, studentId, onSubmitted, isCompleted}: Qui
         );
     }
 
-    // 🛑 CHẶN SPAM: NẾU ĐÃ HOÀN THÀNH TỪ TRƯỚC THÌ KHÔNG CHO LÀM LẠI NỮA
-    if (isCompleted && !result) {
-        return (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 p-8 text-center animate-in fade-in zoom-in">
-                <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shadow-sm ring-4 ring-emerald-50">
-                    <Check size={28} strokeWidth={2.5} />
-                </div>
-                <h3 className="text-lg font-bold text-emerald-800">Bạn đã vượt qua!</h3>
-                <p className="mt-1 text-sm text-emerald-600">Bài Quiz này đã được hoàn thành với số điểm tuyệt đối.</p>
-            </div>
-        );
-    }
-
     const allAnswered = safeQuestions.every((q) => selectedAnswers[q.id] !== undefined);
 
     const handleSelect = (questionId: string, optionIndex: number) => {
-        if (result) return; 
+        if (result || isCompleted) return; 
         setSelectedAnswers((prev) => ({...prev, [questionId]: optionIndex}));
     };
 
@@ -79,10 +66,22 @@ export function QuizContent({lessonId, studentId, onSubmitted, isCompleted}: Qui
         setSelectedAnswers({});
     };
 
-    const getResultForQuestion = (questionId: string) => result?.results.find((r) => r.questionId === questionId);
-
     return (
         <div className="flex flex-col gap-5">
+            {/* THÔNG BÁO HOÀN THÀNH - KHI XEM LẠI LỊCH SỬ */}
+            {isCompleted && !result && (
+                <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 animate-in fade-in">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                        <Check size={20} strokeWidth={3} />
+                    </div>
+                    <div>
+                        <h4 className="font-bold text-emerald-800">Bạn đã hoàn thành bài tập này!</h4>
+                        <p className="text-sm text-emerald-600">Bạn có thể xem lại câu hỏi và đáp án đúng, nhưng không thể nộp lại.</p>
+                    </div>
+                </div>
+            )}
+
+            {/* KẾT QUẢ KHI VỪA NỘP XONG */}
             {result && (
                 <div className="flex flex-col gap-3 rounded-xl border border-orange-200 bg-orange-50 p-5 sm:flex-row sm:items-center sm:justify-between animate-in fade-in">
                     <div>
@@ -92,7 +91,6 @@ export function QuizContent({lessonId, studentId, onSubmitted, isCompleted}: Qui
                         <p className="text-xs font-bold text-orange-600 mt-0.5">Điểm: {result.scorePercent}%</p>
                     </div>
                     
-                    {/* CHỈ HIỆN NÚT LÀM LẠI NẾU ĐIỂM < 100% */}
                     {result.scorePercent < 100 && (
                         <button
                             type="button"
@@ -107,8 +105,8 @@ export function QuizContent({lessonId, studentId, onSubmitted, isCompleted}: Qui
             )}
             
             {safeQuestions.map((question, index) => {
-                const questionResult = getResultForQuestion(question.id);
                 const selectedIndex = selectedAnswers[question.id];
+                
                 return (
                     <div key={question.id} className="rounded-xl border border-gray-100 bg-white p-6">
                         <p className="mb-4 text-sm font-semibold text-gray-900">
@@ -117,31 +115,43 @@ export function QuizContent({lessonId, studentId, onSubmitted, isCompleted}: Qui
                         <div className="flex flex-col gap-2">
                             {question.options.map((option, optionIndex) => {
                                 const isSelected = selectedIndex === optionIndex;
-                                const isCorrectOption = questionResult?.correctOptionIndex === optionIndex;
-                                const isWrongSelected = Boolean(questionResult) && isSelected && !questionResult!.correct;
+                                
+                                // ĐÚNG TỪ SUBMIT HIỆN TẠI VỪA NỘP
+                                const isCorrectFromSubmit = result?.results.find((r) => r.questionId === question.id)?.correctOptionIndex === optionIndex;
+                                // ĐÚNG TỪ LỊCH SỬ (ĐÃ PASS) DO BACKEND TRẢ VỀ
+                                const isCorrectFromHistory = isCompleted && !result && question.correctOptionIndex === optionIndex;
+                                // TỔNG HỢP: LÀ ĐÁP ÁN ĐÚNG
+                                const isCorrectOption = isCorrectFromSubmit || isCorrectFromHistory;
+                                
+                                // SAI KHI VỪA NỘP BÀI
+                                const isWrongSelected = Boolean(result) && isSelected && !result?.results.find((r) => r.questionId === question.id)?.correct;
                                 
                                 return (
                                     <button
                                         key={optionIndex}
                                         type="button"
-                                        disabled={Boolean(result)}
+                                        disabled={Boolean(result) || isCompleted}
                                         onClick={() => handleSelect(question.id, optionIndex)}
                                         className={clsx(
                                             "flex items-center justify-between rounded-lg border px-4 py-2.5 text-left text-sm transition-colors",
-                                            result
+                                            (result || isCompleted)
                                                 ? isCorrectOption
-                                                    ? "border-emerald-300 bg-emerald-50 text-emerald-700 font-medium"
+                                                    // CSS TÔ XANH NHỮNG CÂU ĐÚNG
+                                                    ? "border-emerald-300 bg-emerald-50 text-emerald-700 font-medium opacity-100 ring-2 ring-emerald-100"
                                                     : isWrongSelected
-                                                        ? "border-red-300 bg-red-50 text-red-700 font-medium"
-                                                        : "border-gray-100 text-gray-400"
+                                                        // CSS TÔ ĐỎ NHỮNG CÂU VỪA CHỌN SAI
+                                                        ? "border-red-300 bg-red-50 text-red-700 font-medium opacity-100"
+                                                        // MỜ ĐI CÁC CÂU KHÔNG CHỌN / KHÔNG ĐÚNG
+                                                        : "border-gray-100 text-gray-400 opacity-60 cursor-not-allowed"
                                                 : isSelected
+                                                    // ĐANG LÀM BÀI -> BẤM CHỌN THÌ MÀU CAM
                                                     ? "border-orange-400 bg-orange-50 text-orange-700 font-medium"
                                                     : "border-gray-200 text-gray-700 hover:border-orange-300 hover:bg-orange-50/50"
                                         )}
                                     >
                                         <span>{option}</span>
-                                        {result && isCorrectOption && <Check className="h-4 w-4 shrink-0"/>}
-                                        {result && isWrongSelected && <X className="h-4 w-4 shrink-0"/>}
+                                        {isCorrectOption && <Check className="h-4 w-4 shrink-0 text-emerald-600"/>}
+                                        {isWrongSelected && <X className="h-4 w-4 shrink-0 text-red-600"/>}
                                     </button>
                                 );
                             })}
@@ -150,7 +160,7 @@ export function QuizContent({lessonId, studentId, onSubmitted, isCompleted}: Qui
                 );
             })}
             
-            {!result && (
+            {!result && !isCompleted && (
                 <button
                     type="button"
                     disabled={!allAnswered || isSubmitting}

@@ -193,32 +193,31 @@ export function LessonDetailPage() {
                             <PracticeContent
                                 lesson={lesson} studentId={studentId} existingSubmission={existingSubmission} onSubmit={handleSubmitPractice}
                                 onDeleteSubmission={handleDeleteSubmission} isSubmitting={isUploadingFile || isSubmittingProgress} isDeleting={isDeletingSubmission}
-                                isCompleted={Array.from(completedLessonIds).some(id => id.includes(lesson.id))}
+                                // Đổi từ .includes sang .has để chỉ nhận đúng ID bài học, bỏ qua các ID rác cũ
+                                isCompleted={completedLessonIds.has(lesson.id)}
                                 onQuizSubmitted={async (result, attempts) => {
-                                    const quizId = (result as any).quizId || (result as any).id || "quiz";
-                                    const customFirebaseId = `${quizId}_${lesson.id}`;
-
+                                    // Bỏ dòng khai báo customFirebaseId dị dạng đi
                                     if (result.scorePercent === 100) {
                                         submitProgress({
                                             studentId,
-                                            lessonId: customFirebaseId,
+                                            lessonId: lesson.id, // Dùng chuẩn xác ID của bài học này
                                             progress: 99,
                                             completed: true,
                                             lastPosition: 0
                                         });
-
+                                        
                                         const xp = (attempts === 1) ? 15 : 10;
                                         try {
-                                            await addXpToRank(studentId, xp, customFirebaseId);
+                                            await addXpToRank(studentId, xp, lesson.id); // Dùng lesson.id cho đồng bộ
                                             toast.success(`Tuyệt vời! Bạn nhận được +${xp} XP!`, { duration: 5000 });
                                         } catch (e) {
-                                            console.error("[LỖI CỘNG XP] Thất bại:", e);
-                                            toast.error("Lỗi: Không thể lưu điểm XP.");
+                                            console.error("[LƯU XP] Thất bại:", e);
+                                            toast.error("Lỗi: Không thể thêm XP.");
                                         }
                                     } else {
                                         submitProgress({
                                             studentId,
-                                            lessonId: customFirebaseId,
+                                            lessonId: lesson.id, // Dùng chuẩn xác ID của bài học
                                             progress: 50,
                                             completed: false,
                                             lastPosition: 0
