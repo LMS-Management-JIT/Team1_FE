@@ -1,4 +1,4 @@
-import {Menu, X, LogOut, Trophy, MessageCircle} from "lucide-react";
+import {Menu, X, Trophy, MessageCircle} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import clsx from "clsx";
@@ -9,6 +9,7 @@ import { useAuthContext } from "../../feature/auth/context/AuthContext.tsx";
 import { GlobalSearchBox } from "../../components/search/GlobalSearchBox";
 import { useChatContext } from "../../feature/chat/context/ChatContext";
 import { NotificationBell } from "../../components/notification/NotificationBell";
+import { ProfileMenu } from "../../components/profile/ProfileMenu";
 
 export function Header() {
 
@@ -16,7 +17,6 @@ export function Header() {
     const { openChat } = useChatContext();
 
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [homeCourseId, setHomeCourseId] = useState<string | null>(null);
 
     const location = useLocation();
@@ -37,7 +37,6 @@ export function Header() {
     const handleLogout = () => {
         logout(undefined, {
             onSettled: () => {
-                setShowProfileMenu(false);
                 setMobileMenuOpen(false);
                 navigate('/login', { replace: true });
             }
@@ -106,28 +105,7 @@ export function Header() {
 
                     <NotificationBell studentId={studentId} />
 
-                    <div className="relative">
-                        <button
-                            onClick={() => setShowProfileMenu(!showProfileMenu)}
-                            disabled={isLoggingOut}
-                            className="h-8 w-8 shrink-0 rounded-full bg-orange-100 text-sm font-bold text-[#ff6b13] transition-transform active:scale-95 disabled:opacity-50"
-                        >
-                            {isLoggingOut ? "..." : (user?.displayName?.substring(0, 2).toUpperCase() || "HV")}
-                        </button>
-
-                        {showProfileMenu && (
-                            <div className="absolute right-0 mt-2 w-48 rounded-xl bg-white py-1 shadow-xl ring-1 ring-black/5 z-50 animate-in fade-in slide-in-from-top-1 duration-100">
-                                <button
-                                    onClick={handleLogout}
-                                    className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"
-                                    type="button"
-                                >
-                                    <LogOut size={16} />
-                                    {isLoggingOut ? "Đang xử lý..." : "Đăng xuất"}
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                    <ProfileMenu user={user} isLoggingOut={isLoggingOut} onLogout={handleLogout} />
 
                     <button
                         className="grid h-8 w-8 place-items-center rounded-full bg-white/20 lg:hidden"
