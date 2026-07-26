@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { useQuery, useMutation, useQueryClient, QueryClient } from '@tanstack/react-query'
-
+import { logoutOneSignal } from '../config/oneSignal';
 export type User = {
     id: string         // Đây là Account ID
     studentId?: string // ID học viên trả về từ UserResponse ở Backend
@@ -99,6 +99,11 @@ export async function getCurrentUser(explicitToken?: string | null): Promise<Use
 
 export async function logoutUser(): Promise<void> {
     try {
+            await logoutOneSignal();
+        } catch (e) {
+            console.error("Lỗi khi đăng xuất OneSignal:", e);
+        }
+    try {
         await authClient.post('/auth/logout', {})
     } catch (e) {
         console.error("Logout API error", e)
@@ -128,17 +133,28 @@ export function useAuth() {
     })
 
     const loginMutation = useMutation({
-        mutationFn: login,
-        onSuccess: async (loginResult) => {
-            if (loginResult?.token) {
-                authClient.defaults.headers.common['Authorization'] = `Bearer ${loginResult.token}`;
+            // Gộp bước đăng nhập và lấy thông tin User vào chung 1 luồng
+            mutationFn: async (credentials: { email: string; password: string }) => {
+                const loginResult = await login(credentials);
+                if (loginResult?.token) {
+                    // Đội token vào header ngay lập tức
+                    authClient.defaults.headers.common['Authorization'] = `Bearer ${loginResult.token}`;
 
-                // Lấy thông tin user ngay bằng token tươi — KHÔNG invalidate để tránh vòng lặp
-                const freshUser = await getCurrentUser(loginResult.token)
-                qc.setQueryData(['auth', 'me'], freshUser)
-            }
-        },
-    })
+                    // Lấy thông tin user ngay bằng token tươi
+                    const freshUser = await getCurrentUser(loginResult.token);
+
+                    // Trả về cả token data và user profile
+                    return { ...loginResult, user: freshUser };
+                }
+                return null;
+            },
+            onSuccess: (data) => {
+                if (data?.user) {
+                    // Cập nhật state của React Query
+                    qc.setQueryData(['auth', 'me'], data.user);
+                }
+            },
+        })
 
     const logoutMutation = useMutation({
         mutationFn: logoutUser,
@@ -168,6 +184,7 @@ authClient.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401 && globalQueryClient) {
+            logoutOneSignal().catch(console.error);
             document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;'
             localStorage.removeItem('studentId');
             delete authClient.defaults.headers.common['Authorization'];

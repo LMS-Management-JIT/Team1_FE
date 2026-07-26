@@ -6,6 +6,7 @@ import * as Yup from 'yup'
 import { useAuth } from '../../services/authService'
 import { toast } from 'sonner'
 import heroImage from '../../assets/login_page_img.png'
+import { setupOneSignal } from '../../config/oneSignal'
 type LoginFormValues = {
     email: string
     password: string
@@ -67,14 +68,22 @@ export default function LoginPage() {
                                 validationSchema={loginSchema}
                                 onSubmit={async (values, { setSubmitting }) => {
                                     try {
-                                        // 1. Gọi hàm login để xác thực tài khoản và tự động lưu Token vào Cookie
-                                        await login({ email: values.email, password: values.password }); // Đúng kiểu Object cấu trúc
+                                       // 1. Gọi hàm login MỘT LẦN DUY NHẤT và lấy response
+                                               const response: any = await login({ email: values.email, password: values.password });
 
-                                        // 2. Thông báo thành công tới học viên
-                                        toast.success('Đăng nhập thành công');
+                                               // 2. Lấy accountId từ response
+                                               const accountId = response?.user?.id;
 
-                                        // 3. Chuyển thẳng học viên vào trang chủ Dashboard
-                                        navigate('/dashboard', { replace: true });
+                                               // 3. Cấu hình OneSignal
+                                               if (accountId) {
+                                                   setupOneSignal(accountId);
+                                               } else {
+                                                   console.warn("Không tìm thấy accountId để cấu hình OneSignal");
+                                               }
+
+                                               // 4. Thông báo và chuyển hướng
+                                               toast.success('Đăng nhập thành công');
+                                               navigate('/dashboard', { replace: true });
                                     } catch (error: any) {
                                         // Hiển thị thông báo lỗi từ Backend nếu sai mật khẩu/email
                                         const message = error.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.';
