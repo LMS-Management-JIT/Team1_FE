@@ -43,7 +43,6 @@ export function SafeHtmlContent({
             const el = block as HTMLElement;
             el.removeAttribute("data-highlighted");
             el.classList.remove("language-undefined");
-
             try {
                 hljs.highlightElement(el);
             } catch (err) {
@@ -77,7 +76,6 @@ export function SafeHtmlContent({
                 "[&_pre_code]:font-mono",
                 className
             )}
-            // eslint-disable-next-line react/no-danger -- html đã qua DOMPurify.sanitize ở trên
             dangerouslySetInnerHTML={{__html: cleanHtml}}
         />
     );
