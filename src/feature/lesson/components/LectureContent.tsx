@@ -1,20 +1,14 @@
-import { Play, Pause, Volume2, VolumeX, Maximize, Sparkles, CheckCircle2 } from "lucide-react";
-import { useRef, useState, useEffect } from "react";
+import { Play, Pause, Volume2, VolumeX, Maximize, CheckCircle2 } from "lucide-react";
+import { useRef, useState } from "react";
 import type { Lesson } from "../../../types/lesson.ts";
-import { SafeHtmlContent } from "../../../components/lesson/common/SafeHtmlContent";
-import { highlightTimestamps } from "../../../utils/highlightTimestamps";
-import { formatDuration } from "../../../utils/formatDuration";
 import { toast } from "sonner";
 
 interface LectureContentProps {
     lesson: Lesson;
-    showSummary: boolean;
     onComplete?: (xp: number) => void;
 }
 
-export function LectureContent({ lesson, showSummary, onComplete }: LectureContentProps) {
-    const enhancedContent = highlightTimestamps(lesson.content);
-    
+export function LectureContent({ lesson, onComplete }: LectureContentProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     
@@ -174,18 +168,6 @@ export function LectureContent({ lesson, showSummary, onComplete }: LectureConte
                     </button>
                 )}
             </div>
-
-            {/* BẢNG TÓM TẮT AI */}
-            {showSummary && (
-                <div className="rounded-xl border border-orange-200 bg-white p-5 shadow-sm">
-                    <div className="mb-3 flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 text-sm font-bold text-orange-600">
-                            <Sparkles className="h-4 w-4"/> Tóm tắt bởi AI
-                        </div>
-                    </div>
-                    <SafeHtmlContent html={enhancedContent} fallback="Chưa có tóm tắt cho bài giảng này." />
-                </div>
-            )}
         </div>
     );
 }

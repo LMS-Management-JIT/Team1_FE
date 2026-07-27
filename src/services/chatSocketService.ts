@@ -7,6 +7,14 @@ const SOCKET_URL =
     (import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api").replace(/\/api\/?$/, "") +
     "/ws";
 
+// Lấy JWT hiện tại để đính kèm vào STOMP CONNECT (giống cách apiClient lấy token).
+// Không thể set header Authorization cho request handshake của SockJS (/ws/info, /ws/xhr...),
+// nên token phải được gửi qua connectHeaders của STOMP, backend sẽ đọc ở CONNECT frame.
+function getAuthToken(): string | null {
+    const match = document.cookie.match(/(?:^|;\s*)accessToken=([^;]*)/);
+    return match ? decodeURIComponent(match[1]) : null;
+}
+
 class ChatSocketService {
     private client: Client | null = null;
     private subscriptions = new Map<string, StompSubscription>();
@@ -17,8 +25,11 @@ class ChatSocketService {
             return;
         }
 
+        const token = getAuthToken();
+
         this.client = new Client({
             webSocketFactory: () => new SockJS(SOCKET_URL) as any,
+            connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
             reconnectDelay: 4000,
             onConnect: () => onConnected?.(),
             onStompError: (frame) => onError?.(frame),
