@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useState } from "react";
-import { Sparkles, BookOpen } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { useLessonDetail } from "../../../hooks/useLessonDetail";
 import { useTopicDetail } from "../../../hooks/useTopicDetail";
@@ -12,7 +12,7 @@ import {
     useSubmitLessonFile,
 } from "../../../hooks/useLessonSubmission";
 import { buildLessonDetailPath } from "../../../constants/routes";
-import { LessonBreadcrumb } from "../components/LessonBreadcrumb.tsx";
+import { Breadcrumb } from "../../../components/common/Breadcrumb.tsx";
 import { Header } from "../../../layouts/Header/Header";
 import { LessonSidebar } from "../components/LessonSidebar.tsx";
 import { LessonPagination } from "../components/LessonPagination.tsx";
@@ -22,6 +22,7 @@ import { PracticeContent } from "../components/PracticeContent.tsx";
 import { Loading } from "../../../components/lesson/ui/Loading";
 import { addXpToRank } from "../../../services/rankService";
 import { useAuthContext } from "../../../feature/auth/context/AuthContext"; // 🔑 THÊM
+import { LessonAiAssistant } from "../components/LessonAiAssistant";
 
 export function LessonDetailPage() {
     const { topicId, lessonId } = useParams<{ topicId: string; lessonId: string }>();
@@ -31,9 +32,9 @@ export function LessonDetailPage() {
     const { studentId, user, isLoading: isAuthLoading } = useAuthContext();
     const studentName = user?.displayName || "Học viên";
 
-    const { data: lesson, isLoading: isLessonLoading } = useLessonDetail(lessonId);
-    const { data: topic, isLoading: isTopicLoading } = useTopicDetail(topicId);
-    const { data: moduleId } = useModuleIdForTopic(topicId);
+    const { data: lesson, isLoading: isLessonLoading } = useLessonDetail(lessonId, !isAuthLoading);
+    const { data: topic, isLoading: isTopicLoading } = useTopicDetail(topicId, !isAuthLoading);
+    const { data: moduleId } = useModuleIdForTopic(topicId, !isAuthLoading);
     const topicsListHref = moduleId ? `/topics/${moduleId}` : undefined;
 
     // FETCH TIẾN ĐỘ
@@ -49,7 +50,6 @@ export function LessonDetailPage() {
     const { mutate: removeSubmission, isPending: isDeletingSubmission } =
         useDeleteLessonSubmission(studentId ?? undefined, lesson?.id);
 
-    const [showSummary, setShowSummary] = useState(false);
     const [pendingLessonRoute, setPendingLessonRoute] = useState<string | null>(null);
 
     const completedLessonIds = new Set(
@@ -130,7 +130,7 @@ export function LessonDetailPage() {
                 toast.success(`Đã nộp file "${file.name}" thành công`);
                 handleLessonComplete(20);
             }
-        } catch (error) {
+        } catch {
             toast.error("Nộp bài thất bại, vui lòng thử lại");
         }
     };
@@ -166,18 +166,13 @@ export function LessonDetailPage() {
             )}
 
             <div className="mx-auto w-full max-w-7xl flex-1 px-4 pt-6 pb-4 sm:px-6 sm:pt-8 lg:px-6">
-                <LessonBreadcrumb courseName={topic.courseName ?? ""} topicName={topic.topicName} lessonName={lesson.lessonName} topicHref={topicsListHref} />
-
-                <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">{lesson.lessonName}</h1>
-
-                    {lesson.type === "LECTURE" && (
-                        <button onClick={() => setShowSummary((prev) => !prev)} className="flex w-fit items-center gap-1.5 rounded-lg border border-orange-500 px-4 py-2 text-sm font-medium text-orange-500 hover:bg-orange-50 transition-colors">
-                            <Sparkles className="h-3.5 w-3.5"/>
-                            {showSummary ? "Đóng tóm tắt" : "Tóm tắt với AI"}
-                        </button>
-                    )}
-                </div>
+                <Breadcrumb
+                    items={[
+                        { label: "Khoá học của tôi", href: "/" },
+                        { label: topic.topicName, href: topicsListHref },
+                        { label: lesson.lessonName },
+                    ]}
+                />
 
                 <div className="flex flex-col gap-6 lg:flex-row">
                     <div className="min-w-0 flex-1">
@@ -187,21 +182,20 @@ export function LessonDetailPage() {
                                 lessonOrder={currentLessonOrder}
                             />
                         )}
-                        {lesson.type === "LECTURE" && <LectureContent lesson={lesson} showSummary={showSummary} onComplete={handleLessonComplete} />}
+                        {lesson.type === "LECTURE" && <LectureContent lesson={lesson} onComplete={handleLessonComplete} />}
 
                         {lesson.type === "PRACTICE" && (
                             <PracticeContent
                                 lesson={lesson} studentId={studentId} existingSubmission={existingSubmission} onSubmit={handleSubmitPractice}
                                 onDeleteSubmission={handleDeleteSubmission} isSubmitting={isUploadingFile || isSubmittingProgress} isDeleting={isDeletingSubmission}
-                                isCompleted={Array.from(completedLessonIds).some(id => id.includes(lesson.id))}
+                                // Đổi từ .includes sang .has để chỉ nhận đúng ID bài học, bỏ qua các ID rác cũ
+                                isCompleted={completedLessonIds.has(lesson.id)}
                                 onQuizSubmitted={async (result, attempts) => {
-                                    const quizId = (result as any).quizId || (result as any).id || "quiz";
-                                    const customFirebaseId = `${quizId}_${lesson.id}`;
-
+                                    // Bỏ dòng khai báo customFirebaseId dị dạng đi
                                     if (result.scorePercent === 100) {
                                         submitProgress({
                                             studentId,
-                                            lessonId: customFirebaseId,
+                                            lessonId: lesson.id, // Dùng chuẩn xác ID của bài học này
                                             progress: 99,
                                             completed: true,
                                             lastPosition: 0
@@ -209,16 +203,16 @@ export function LessonDetailPage() {
 
                                         const xp = (attempts === 1) ? 15 : 10;
                                         try {
-                                            await addXpToRank(studentId, xp, customFirebaseId);
+                                            await addXpToRank(studentId, xp, lesson.id); // Dùng lesson.id cho đồng bộ
                                             toast.success(`Tuyệt vời! Bạn nhận được +${xp} XP!`, { duration: 5000 });
                                         } catch (e) {
-                                            console.error("[LỖI CỘNG XP] Thất bại:", e);
-                                            toast.error("Lỗi: Không thể lưu điểm XP.");
+                                            console.error("[LƯU XP] Thất bại:", e);
+                                            toast.error("Lỗi: Không thể thêm XP.");
                                         }
                                     } else {
                                         submitProgress({
                                             studentId,
-                                            lessonId: customFirebaseId,
+                                            lessonId: lesson.id, // Dùng chuẩn xác ID của bài học
                                             progress: 50,
                                             completed: false,
                                             lastPosition: 0
@@ -238,7 +232,7 @@ export function LessonDetailPage() {
                                 try {
                                     await addXpToRank(studentId, 30, `TOPIC_${topic.id}`);
                                     toast.success("🏆 CHÚC MỪNG! Bạn đã hoàn thành trọn vẹn chương học và được thưởng +30 XP!", { duration: 5000 });
-                                } catch (e) {}
+                                } catch {}
 
                                 navigate(topicsListHref || "/");
                             }}
@@ -251,6 +245,12 @@ export function LessonDetailPage() {
                     />
                 </div>
             </div>
+            <LessonAiAssistant
+                topicId={topic.id}
+                topicName={topic.topicName}
+                lessonId={lesson.id}
+                lessonTitle={lesson.lessonName}
+            />
         </div>
     );
 }

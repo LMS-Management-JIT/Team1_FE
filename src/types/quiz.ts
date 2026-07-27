@@ -3,6 +3,7 @@ export interface QuizQuestionPublic {
     questionText: string;
     options: string[];
     questionOrder: number;
+    correctOptionIndex?: number; 
 }
 
 export interface QuizAnswerItem {

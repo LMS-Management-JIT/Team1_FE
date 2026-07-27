@@ -205,7 +205,19 @@ export default function ModulesInCoursePage() {
             setIsLoadingModules(true);
             try {
                 const data = await getModulesByCourseId(activeCourseId);
-                setModules(data);
+                
+                // --- THÊM LOGIC SẮP XẾP TẠI ĐÂY ---
+                // Sắp xếp theo thời gian tạo từ Cũ -> Mới (Tăng dần)
+                const sortedData = data.sort((a, b) => {
+                    // Chuyển chuỗi ngày tháng thành số (timestamp) để trừ cho nhau
+                    // Lưu ý: Đổi 'createDate' thành 'createdAt' nếu backend của bạn dùng tên khác
+                    const timeA = new Date(a.createDate || 0).getTime();
+                    const timeB = new Date(b.createDate || 0).getTime();
+                    
+                    return timeA - timeB; // timeA - timeB là Cũ -> Mới. (Nếu muốn Mới -> Cũ thì timeB - timeA)
+                });
+
+                setModules(sortedData);
             } catch (error) {
                 console.error("Lỗi khi fetch dữ liệu modules:", error);
             } finally {

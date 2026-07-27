@@ -1,9 +1,11 @@
 export interface ChatConversation {
-    id: string;
-    participants: string[];
+    // id = null nghĩa là chưa từng nhắn tin với người này (liên hệ "ảo" từ danh sách giáo viên/học sinh)
+    // -> chỉ tạo conversation thật khi người dùng gửi tin nhắn đầu tiên
+    id: string | null;
+    participants: string[] | null;
     lastMessage: string | null;
     lastMessageTime: string | null;
-    createdAt: string;
+    createdAt: string | null;
     otherAccountId: string | null;
     otherFullName: string | null;
     otherRole: string | null;
