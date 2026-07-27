@@ -29,7 +29,6 @@ export function ChatModal() {
         accountId,
         conversations,
         isLoadingConversations,
-        selectedConversationId,
         selectedConversation,
         messages,
         selectConversation,
@@ -105,10 +104,10 @@ export function ChatModal() {
 
                         {filteredConversations.map((conversation: ChatConversation) => (
                             <button
-                                key={conversation.id}
-                                onClick={() => selectConversation(conversation.id)}
+                                key={conversation.otherAccountId}
+                                onClick={() => selectConversation(conversation.otherAccountId)}
                                 className={`flex w-full items-center gap-2.5 px-4 py-2.5 text-left transition ${
-                                    conversation.id === selectedConversationId
+                                    conversation.otherAccountId === selectedConversation?.otherAccountId
                                         ? "bg-orange-50"
                                         : "hover:bg-gray-50"
                                 }`}
@@ -121,7 +120,7 @@ export function ChatModal() {
                                         {conversation.otherFullName || "Người dùng"}
                                     </p>
                                     <p className="truncate text-xs text-gray-500">
-                                        {conversation.lastMessage || "Bắt đầu trò chuyện"}
+                                        {conversation.lastMessage || "Hãy bắt đầu cuộc trò chuyện"}
                                     </p>
                                 </div>
                                 <span className="shrink-0 text-[11px] text-gray-400">
@@ -158,9 +157,15 @@ export function ChatModal() {
                     </div>
 
                     <div className="flex-1 overflow-y-auto px-4.5 py-4">
-                        {!selectedConversationId && (
+                        {!selectedConversation && (
                             <div className="grid h-full place-items-center text-sm text-gray-400">
                                 Chưa có tin nhắn nào được chọn
+                            </div>
+                        )}
+
+                        {selectedConversation && messages.length === 0 && (
+                            <div className="grid h-full place-items-center text-sm text-gray-400">
+                                Hãy bắt đầu cuộc trò chuyện
                             </div>
                         )}
 
@@ -189,13 +194,13 @@ export function ChatModal() {
                             value={draft}
                             onChange={(e) => setDraft(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                            disabled={!selectedConversationId}
+                            disabled={!selectedConversation}
                             placeholder="Nhập tin nhắn..."
                             className="h-9 flex-1 rounded-full bg-gray-100 px-4 text-sm outline-none placeholder:text-gray-400 disabled:opacity-50"
                         />
                         <button
                             onClick={handleSend}
-                            disabled={!selectedConversationId || !draft.trim()}
+                            disabled={!selectedConversation || !draft.trim()}
                             className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#ff6b13] text-white transition disabled:opacity-40"
                         >
                             <Send size={16} />

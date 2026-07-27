@@ -19,6 +19,14 @@ export async function getConversationsOfUser(accountId: string): Promise<ChatCon
     return response.data;
 }
 
+// Danh sách TẤT CẢ giáo viên/học sinh có thể nhắn tin (kể cả chưa từng chat lần nào)
+export async function getContactsOfUser(accountId: string): Promise<ChatConversation[]> {
+    const response = await apiClient.get<ChatConversation[]>("chat/contacts", {
+        params: { accountId },
+    });
+    return response.data;
+}
+
 export async function getMessages(conversationId: string): Promise<ChatMessage[]> {
     const response = await apiClient.get<ChatMessage[]>(
         `chat/conversations/${conversationId}/messages`
