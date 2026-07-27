@@ -1,7 +1,5 @@
 import { Bell, Menu, X, LogOut, Trophy, MessageCircle } from "lucide-react";
 import { useEffect, useState, useRef, useCallback } from "react";
-import {Menu, X, Trophy, MessageCircle} from "lucide-react";
-import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import OneSignal from 'react-onesignal';

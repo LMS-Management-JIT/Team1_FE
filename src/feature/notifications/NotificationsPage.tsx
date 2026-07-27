@@ -4,8 +4,8 @@ import { useAuth } from '../../services/authService';
 import { setupOneSignal } from '../../config/oneSignal';
 import {
   getMyNotifications,
-  markNotificationAsRead,
-  markAllNotificationsAsRead,
+  markMyNotificationAsRead,
+  markAllMyNotificationsAsRead,
   type NotificationItem,
   type NotificationType,
 } from '../../services/notificationService';
@@ -136,7 +136,7 @@ export default function NotificationsPage() {
     setSelectedId(item.id);
     if (item.is_read) return;
     try {
-      await markNotificationAsRead(item.type, item.id);
+      await markMyNotificationAsRead(item.type, item.id);
       setNotifications(prev => prev.map(n => n.id === item.id ? { ...n, is_read: true } : n));
       // 📢 Bắn sự kiện báo Header tải lại số đếm
       window.dispatchEvent(new CustomEvent('app:read-notification'));
@@ -147,7 +147,7 @@ export default function NotificationsPage() {
 
   const handleMarkAllRead = async () => {
     try {
-      await markAllNotificationsAsRead();
+      await markAllMyNotificationsAsRead();
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
       // 📢 Bắn sự kiện báo Header tải lại số đếm
       window.dispatchEvent(new CustomEvent('app:read-notification'));
