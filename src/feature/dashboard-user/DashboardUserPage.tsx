@@ -19,7 +19,7 @@ import { TeacherProfileModal } from "./components/TeacherProfileModal/TeacherPro
 import { setupOneSignal } from "../../config/oneSignal";
 
 export default function DashboardUserPage() {
-    const { accountId, studentId, isLoading: isAuthLoading } = useAuth();
+    const { accountId, studentId, oneSignalHash, isLoading: isAuthLoading } = useAuth();
 
     const [courses, setCourses] = useState<DashboardCourse[]>([]);
     const [progresses, setProgresses] = useState<DashboardCourseProgress[]>([]);
@@ -38,9 +38,9 @@ export default function DashboardUserPage() {
 
     useEffect(() => {
         if (accountId) {
-            setupOneSignal(accountId);
+            setupOneSignal(accountId, oneSignalHash);
         }
-    }, [accountId]);
+    }, [accountId, oneSignalHash]);
 
     useEffect(() => {
         const currentStudentId = studentId || localStorage.getItem('studentId');

@@ -43,30 +43,33 @@ let globalQueryClient: QueryClient | null = null
 
 // --- CÁC HÀM API CHÍNH ---
 
-export async function login({ email, password }: { email: string; password: string }): Promise<{ token: string, studentId: string | null } | null> {
+export async function login({ email, password }: { email: string; password: string }): Promise<{ token: string, studentId: string | null, oneSignalHash: string | null } | null> {
     const response = await authClient.post('/auth/login', { email, password })
 
-    // ✅ ĐÃ SỬA: Backend trả về flat JSON, đọc thẳng từ response.data (không có wrapper accessTokenResponse)
     const tokenData = response.data;
 
     if (tokenData && tokenData.accessToken) {
         const token = tokenData.accessToken;
         const studentId = tokenData.studentId || null;
+        const oneSignalHash = tokenData.oneSignalHash || null; // BỔ SUNG
 
-        // Lưu token vào Cookie
         document.cookie = `accessToken=${token}; path=/; SameSite=Lax;`
-
-        // Đội thẳng token vào axios default header để request tiếp theo không cần chờ cookie
         authClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
 
-        // Lưu studentId vào localStorage dự phòng
         if (studentId) {
             localStorage.setItem('studentId', studentId);
         } else {
             localStorage.removeItem('studentId');
         }
 
-        return { token, studentId };
+        // BỔ SUNG: lưu hash để dùng lại khi F5 (DashboardUserPage mount lại, không qua LoginPage)
+        if (oneSignalHash) {
+            localStorage.setItem('oneSignalHash', oneSignalHash);
+        } else {
+            localStorage.removeItem('oneSignalHash');
+        }
+
+        return { token, studentId, oneSignalHash };
     }
 
     return null;
@@ -99,10 +102,10 @@ export async function getCurrentUser(explicitToken?: string | null): Promise<Use
 
 export async function logoutUser(): Promise<void> {
     try {
-            await logoutOneSignal();
-        } catch (e) {
-            console.error("Lỗi khi đăng xuất OneSignal:", e);
-        }
+        await logoutOneSignal();
+    } catch (e) {
+        console.error("Lỗi khi đăng xuất OneSignal:", e);
+    }
     try {
         await authClient.post('/auth/logout', {})
     } catch (e) {
@@ -111,13 +114,13 @@ export async function logoutUser(): Promise<void> {
         document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;'
         delete authClient.defaults.headers.common['Authorization']
         localStorage.removeItem('studentId');
+        localStorage.removeItem('oneSignalHash'); // BỔ SUNG
         if (globalQueryClient) {
             globalQueryClient.clear()
             globalQueryClient.setQueryData(['auth', 'me'], null)
         }
     }
 }
-
 // --- CUSTOM HOOK ---
 export function useAuth() {
     const qc = useQueryClient()
@@ -169,6 +172,7 @@ export function useAuth() {
         user,
         accountId: user?.id || null,
         studentId: user ? (user.studentId || localStorage.getItem('studentId') || null) : null,
+        oneSignalHash: user ? localStorage.getItem('oneSignalHash') : null, // BỔ SUNG
         isAuthenticated: !!user && !error,
         isLoading,
         error,
@@ -187,6 +191,7 @@ authClient.interceptors.response.use(
             logoutOneSignal().catch(console.error);
             document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;'
             localStorage.removeItem('studentId');
+            localStorage.removeItem('oneSignalHash'); // BỔ SUNG
             delete authClient.defaults.headers.common['Authorization'];
             globalQueryClient.setQueryData(['auth', 'me'], null)
         }

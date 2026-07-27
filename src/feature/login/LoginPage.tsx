@@ -73,12 +73,12 @@ export default function LoginPage() {
 
                                                // 2. Lấy accountId từ response
                                                const accountId = response?.user?.id;
-
+                                                const oneSignalHash = response?.oneSignalHash;
                                                // 3. Cấu hình OneSignal
                                                if (accountId) {
-                                                   setupOneSignal(accountId);
+                                                 setupOneSignal(accountId, oneSignalHash);
                                                } else {
-                                                   console.warn("Không tìm thấy accountId để cấu hình OneSignal");
+                                                 console.warn("Không tìm thấy accountId để cấu hình OneSignal");
                                                }
 
                                                // 4. Thông báo và chuyển hướng
