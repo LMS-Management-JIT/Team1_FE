@@ -6,6 +6,7 @@ import {
     UserRound,
 } from "lucide-react";
 import type { DashboardTeacher } from "../../../../types/dashboard";
+import { useChatContext } from "../../../chat/context/ChatContext";
 
 interface TeacherSectionProps {
     teachers: DashboardTeacher[];
@@ -20,6 +21,8 @@ export function TeacherSection({
                                    error,
                                    onViewProfile,
                                }: TeacherSectionProps) {
+    const { openChat } = useChatContext();
+
     const visibleCount = 3;
 
     const maxIndex = Math.max(teachers.length - visibleCount, 0);
@@ -119,9 +122,7 @@ export function TeacherSection({
                                     <button
                                         type="button"
                                         onClick={() =>
-                                            alert(
-                                                `Chat với ${teacher.fullName}`
-                                            )
+                                            openChat(teacher.accountId)
                                         }
                                         className="flex h-9 w-[150px] items-center justify-center gap-2 rounded-md bg-white text-sm font-bold text-[#ff6b13]"
                                     >
