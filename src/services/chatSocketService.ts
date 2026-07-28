@@ -18,6 +18,9 @@ function getAuthToken(): string | null {
 class ChatSocketService {
     private client: Client | null = null;
     private subscriptions = new Map<string, StompSubscription>();
+    // Map riêng cho kênh thông báo cá nhân (/topic/chat-notify/{accountId}),
+    // tách biệt với subscriptions theo conversationId ở trên để tránh trùng key.
+    private notificationSubscriptions = new Map<string, StompSubscription>();
 
     connect(onConnected?: () => void, onError?: (error: unknown) => void) {
         if (this.client?.active) {
@@ -42,8 +45,41 @@ class ChatSocketService {
     disconnect() {
         this.subscriptions.forEach((sub) => sub.unsubscribe());
         this.subscriptions.clear();
+        this.notificationSubscriptions.forEach((sub) => sub.unsubscribe());
+        this.notificationSubscriptions.clear();
         this.client?.deactivate();
         this.client = null;
+    }
+
+    isActive(): boolean {
+        return Boolean(this.client?.active);
+    }
+
+    // 🔔 Kênh thông báo cá nhân: nhận tin báo "có tin nhắn mới" cho TOÀN BỘ cuộc trò chuyện
+    // của accountId này, không chỉ cuộc trò chuyện đang mở — dùng để hiện toast + badge
+    // ngay cả khi khung chat đang đóng hoặc đang xem 1 cuộc trò chuyện khác.
+    subscribeToUserNotifications(accountId: string, onMessage: (message: ChatMessage) => void) {
+        if (!this.client || !this.client.active) return;
+
+        this.unsubscribeFromUserNotifications(accountId);
+
+        const subscription = this.client.subscribe(
+            `/topic/chat-notify/${accountId}`,
+            (frame: IMessage) => {
+                const message: ChatMessage = JSON.parse(frame.body);
+                onMessage(message);
+            }
+        );
+
+        this.notificationSubscriptions.set(accountId, subscription);
+    }
+
+    unsubscribeFromUserNotifications(accountId: string) {
+        const existing = this.notificationSubscriptions.get(accountId);
+        if (existing) {
+            existing.unsubscribe();
+            this.notificationSubscriptions.delete(accountId);
+        }
     }
 
     subscribeToConversation(conversationId: string, onMessage: (message: ChatMessage) => void) {
