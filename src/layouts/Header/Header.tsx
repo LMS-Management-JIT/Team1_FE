@@ -15,7 +15,7 @@ import { ProfileMenu } from "../../components/profile/ProfileMenu";
 
 export function Header() {
     const { user, studentId } = useAuthContext();
-    const { openChat } = useChatContext();
+    const { openChat, unreadCount: unreadChatCount } = useChatContext();
 
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [homeCourseId, setHomeCourseId] = useState<string | null>(null);
@@ -139,6 +139,11 @@ export function Header() {
                         className="relative hidden h-8 w-8 place-items-center rounded-full bg-white/20 transition hover:bg-white/30 sm:grid"
                     >
                         <MessageCircle size={16} />
+                        {unreadChatCount > 0 && (
+                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+                                {unreadChatCount > 9 ? '9+' : unreadChatCount}
+                            </span>
+                        )}
                     </button>
                     <Link
                         to="/notifications"
