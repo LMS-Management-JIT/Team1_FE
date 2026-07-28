@@ -45,8 +45,9 @@ export function Header() {
             const count = data.filter(n => !n.is_read).length;
             setUnreadCount(count);
 
-            if (OneSignal.initialized && OneSignal.Notifications.setBadgeCount) {
-                OneSignal.Notifications.setBadgeCount(count).catch(() => {});
+            const os = OneSignal as any;
+            if (os?.initialized && typeof os?.Notifications?.setBadgeCount === "function") {
+                os.Notifications.setBadgeCount(count).catch(() => {});
             }
         } catch (err: any) {
             if (err?.name === 'CanceledError' || err?.name === 'AbortError' || err?.code === 'ERR_CANCELED') return;

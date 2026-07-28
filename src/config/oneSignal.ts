@@ -5,13 +5,13 @@ let isInitStarted = false;
 let currentLoggedInAccountId: string | null = null;
 let authOperationPromise: Promise<void> = Promise.resolve();
 
-export const setupOneSignal = async (accountId: string, externalIdHash?: string) => {
+export const setupOneSignal = async (accountId: string, externalIdHash?: string | null) => {
   if (!accountId) return;
-  if (currentLoggedInAccountId === accountId && OneSignal.initialized) return;
+  if (currentLoggedInAccountId === accountId && isInitStarted) return;
 
   authOperationPromise = authOperationPromise.then(async () => {
     try {
-      if (!isInitStarted && !OneSignal.initialized) {
+      if (!isInitStarted) {
         isInitStarted = true;
         await OneSignal.init({
           appId: "919a378c-ae46-4a1d-b781-f646ee5133fb",
@@ -35,11 +35,11 @@ export const setupOneSignal = async (accountId: string, externalIdHash?: string)
             },
           });
 
-          // 📢 Phát event cho toàn ứng dụng (cả Header và NotificationsPage)
           window.dispatchEvent(new CustomEvent('app:new-notification'));
         });
       }
 
+      // SỬA: chỉ dùng hash khi thực sự có giá trị (khác cả null và undefined)
       if (externalIdHash) {
         await OneSignal.login(String(accountId), externalIdHash);
       } else {
