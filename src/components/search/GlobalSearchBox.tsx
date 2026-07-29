@@ -4,6 +4,9 @@ import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { useAuthContext } from "../../feature/auth/context/AuthContext";
+import { useSearchContext } from "../../components/context/SearchContext";
+import { TeacherProfileModal } from "../../feature/dashboard-user/components/TeacherProfileModal/TeacherProfileModal";
+import type { DashboardTeacher } from "../../types/dashboard";
 import {
     filterSearchIndex,
     useGlobalSearchIndex,
@@ -44,9 +47,11 @@ function truncateSubtitle(text: string | undefined, maxLength = 60): string | un
 export function GlobalSearchBox({ className, placeholder = "Tìm khóa học, giáo viên, bài học...", onNavigate }: GlobalSearchBoxProps) {
     const { studentId } = useAuthContext();
 
-    const [query, setQuery] = useState("");
+    const { query, setQuery } = useSearchContext();
     const [isOpen, setIsOpen] = useState(false);
     const [hasInteracted, setHasInteracted] = useState(false);
+
+    const [selectedTeacher, setSelectedTeacher] = useState<DashboardTeacher | null>(null);
 
     const debouncedQuery = useDebouncedValue(query, 250);
     const { index, isLoading } = useGlobalSearchIndex(studentId, hasInteracted);
@@ -70,7 +75,7 @@ export function GlobalSearchBox({ className, placeholder = "Tìm khóa học, gi
 
     const handleFocus = () => {
         setIsOpen(true);
-        setHasInteracted(true); // chỉ tải dữ liệu tìm kiếm từ lần focus đầu tiên
+        setHasInteracted(true);
     };
 
     const handleSelect = (item: SearchResultItem) => {
@@ -86,11 +91,10 @@ export function GlobalSearchBox({ className, placeholder = "Tìm khóa học, gi
                 navigate(`/courses/${item.id}/modules`);
                 break;
             case "teacher":
-                // ⚠️ Chưa có trang chi tiết giáo viên trong AppRoutes -> không điều hướng
-                return;
+                if (item.teacher) setSelectedTeacher(item.teacher);
+                break;
         }
 
-        setQuery("");
         setIsOpen(false);
         onNavigate?.();
     };
@@ -130,18 +134,13 @@ export function GlobalSearchBox({ className, placeholder = "Tìm khóa học, gi
 
                     {results.map((item) => {
                         const Icon = typeIcon[item.type];
-                        const isTeacher = item.type === "teacher";
 
                         return (
                             <button
                                 key={`${item.type}-${item.id}`}
                                 type="button"
                                 onClick={() => handleSelect(item)}
-                                disabled={isTeacher}
-                                className={clsx(
-                                    "flex w-full items-center gap-3 px-4 py-2 text-left text-sm",
-                                    isTeacher ? "cursor-default" : "hover:bg-orange-50"
-                                )}
+                                className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-orange-50"
                             >
                                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-500">
                                     <Icon size={16} />
@@ -158,6 +157,11 @@ export function GlobalSearchBox({ className, placeholder = "Tìm khóa học, gi
                     })}
                 </div>
             )}
+
+            <TeacherProfileModal
+                teacher={selectedTeacher}
+                onClose={() => setSelectedTeacher(null)}
+            />
         </div>
     );
 }

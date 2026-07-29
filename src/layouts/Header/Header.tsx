@@ -1,17 +1,20 @@
-import { Bell, Menu, X, Trophy, MessageCircle } from "lucide-react";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { Menu, X, Trophy, MessageCircle } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import OneSignal from 'react-onesignal';
 import { getStudentCourses } from "../../services/dashboardService";
 import { useAuth } from "../../services/authService";
-import { getMyNotifications } from "../../services/notificationService";
 import logo from "../../assets/codegym_logo.jpg";
 import { useAuthContext } from "../../feature/auth/context/AuthContext.tsx";
 import { GlobalSearchBox } from "../../components/search/GlobalSearchBox";
 import { useChatContext } from "../../feature/chat/context/ChatContext";
 import { NotificationBell } from "../../components/notification/NotificationBell";
 import { ProfileMenu } from "../../components/profile/ProfileMenu";
+// >>> ĐỔI — dùng số đếm hợp nhất (gộp cả nguồn "account" và "student") thay vì
+// tự fetch getMyNotifications() riêng ở Header như bản cũ, để 3 nơi hiển thị số
+// chưa đọc (icon chuông, badge menu mobile, badge OneSignal) luôn khớp nhau.
+import { useUnifiedUnreadCount } from "../../hooks/useNotifications";
 
 export function Header() {
     const { user, studentId } = useAuthContext();
@@ -19,13 +22,17 @@ export function Header() {
 
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [homeCourseId, setHomeCourseId] = useState<string | null>(null);
-    const [unreadCount, setUnreadCount] = useState(0);
 
     const location = useLocation();
     const navigate = useNavigate();
     const { logout, isLoggingOut } = useAuth();
 
-    const abortRef = useRef<AbortController | null>(null);
+    const accountId = user?.uid || (user as any)?.id || null;
+
+    // >>> ĐỔI — nguồn sự thật DUY NHẤT cho số thông báo chưa đọc, gộp cả:
+    // - account: SYSTEM/CLASS/ATTENDANCE (getMyNotifications)
+    // - student: XP_EARNED/RANK_UP/AI_QUOTA_RESET/... (getNotificationsByStudent)
+    const unreadCount = useUnifiedUnreadCount(accountId ?? undefined, studentId ?? undefined);
 
     useEffect(() => {
         if (!studentId) return;
@@ -36,43 +43,16 @@ export function Header() {
             .catch(() => setHomeCourseId(null));
     }, [studentId]);
 
-    const fetchUnreadCount = useCallback(async () => {
-        if (abortRef.current) abortRef.current.abort();
-        abortRef.current = new AbortController();
-
-        try {
-            const data = await getMyNotifications(undefined, abortRef.current.signal);
-            const count = data.filter(n => !n.is_read).length;
-            setUnreadCount(count);
-
-            const os = OneSignal as any;
-            if (os?.initialized && typeof os?.Notifications?.setBadgeCount === "function") {
-                os.Notifications.setBadgeCount(count).catch(() => {});
-            }
-        } catch (err: any) {
-            if (err?.name === 'CanceledError' || err?.name === 'AbortError' || err?.code === 'ERR_CANCELED') return;
-            console.error("Lỗi tải số thông báo chưa đọc:", err);
-        }
-    }, []);
-
+    // >>> THÊM MỚI — đồng bộ badge count lên OneSignal (icon app khi cài PWA/mobile)
+    // mỗi khi unreadCount hợp nhất thay đổi. Trước đây chỉ đồng bộ theo unreadCount
+    // của riêng nguồn "account" (do tự fetch getMyNotifications trong Header), nên
+    // badge trên icon app bị THIẾU phần thông báo XP/Rank/AI Quota của nguồn "student".
     useEffect(() => {
-        const userId = user?.uid || (user as any)?.id;
-        if (!userId) return;
-
-        fetchUnreadCount();
-
-        const handleReloadUnread = () => fetchUnreadCount();
-
-        // 🔔 Lắng nghe cả event từ OneSignal lẫn event khi user đọc thông báo ở NotificationsPage
-        window.addEventListener('app:new-notification', handleReloadUnread);
-        window.addEventListener('app:read-notification', handleReloadUnread);
-
-        return () => {
-            if (abortRef.current) abortRef.current.abort();
-            window.removeEventListener('app:new-notification', handleReloadUnread);
-            window.removeEventListener('app:read-notification', handleReloadUnread);
-        };
-    }, [user?.uid, fetchUnreadCount]);
+        const os = OneSignal as any;
+        if (os?.initialized && typeof os?.Notifications?.setBadgeCount === "function") {
+            os.Notifications.setBadgeCount(unreadCount).catch(() => {});
+        }
+    }, [unreadCount]);
 
     const handleLogout = () => {
         logout(undefined, {
@@ -146,24 +126,16 @@ export function Header() {
                             </span>
                         )}
                     </button>
-                    <Link
-                        to="/notifications"
-                        className={clsx(
-                            "relative hidden h-8 w-8 place-items-center rounded-full transition sm:grid",
-                            location.pathname.startsWith("/notifications")
-                                ? "bg-white/40"
-                                : "bg-white/20 hover:bg-white/40"
-                        )}
-                        title="Thông báo"
-                    >
-                        <Bell size={16} />
-                        {unreadCount > 0 && (
-                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
-                                {unreadCount > 9 ? '9+' : unreadCount}
-                            </span>
-                        )}
-                    </Link>
-                    <NotificationBell studentId={studentId} />
+
+                    {/*
+                        >>> XOÁ — icon chuông thứ 2 (Link to="/notifications" với Bell + badge riêng)
+                        đã bị gộp vào NotificationBell bên dưới. Trước đây 2 icon này đọc 2 nguồn
+                        khác nhau (icon này chỉ đọc "account", NotificationBell chỉ đọc "student"),
+                        khiến người dùng thấy 2 số chưa đọc khác nhau ở cùng 1 header — giờ chỉ còn
+                        1 điểm vào duy nhất, đọc số đã gộp. Lối vào trang /notifications đầy đủ được
+                        chuyển vào nút "Xem tất cả thông báo" bên trong dropdown của NotificationBell.
+                    */}
+                    <NotificationBell studentId={studentId} accountId={accountId} />
 
                     <ProfileMenu user={user} isLoggingOut={isLoggingOut} onLogout={handleLogout} />
 
