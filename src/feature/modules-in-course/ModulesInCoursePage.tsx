@@ -7,6 +7,7 @@ import { getModulesByCourseId } from "../../services/moduleService";
 import { getStudentCourses } from "../../services/dashboardService";
 import { getTopicsByModule } from "../../services/topicService";
 import { getProgressByStudent } from "../../services/lessonProgressService";
+import { apiClient } from "../../services/apiClient";
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from "../../services/authService";
 import { initStudentRankIfNeeded } from "../../services/rankService";
@@ -39,14 +40,14 @@ const PreviewVideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
     const handleTimeUpdate = () => {
         const video = videoRef.current;
         if (!video) return;
-        
+
         const maxTime = video.duration / 2;
         if (video.currentTime >= maxTime) {
             video.pause();
-            video.currentTime = maxTime; 
+            video.currentTime = maxTime;
             setIsPlaying(false);
         }
-        
+
         setProgress((video.currentTime / maxTime) * 100);
         setCurrentTimeDisplay(formatTime(video.currentTime));
     };
@@ -76,7 +77,7 @@ const PreviewVideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
                 onLoadedMetadata={handleLoadedMetadata}
                 onEnded={() => setIsPlaying(false)}
             />
-            
+
             <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                 <div className="flex items-center gap-3">
                     <button onClick={togglePlay} className="text-white hover:text-orange-400 transition">
@@ -108,7 +109,7 @@ const getCourseStyles = (course: DashboardCourse, index: number) => {
     if (textToSearch.match(/ui|front|react|web|html|css/)) return { Icon: Zap, colorClass: 'text-orange-500', bgClass: 'bg-orange-50', activeBg: 'bg-gradient-to-br from-orange-500 to-orange-600' };
     if (textToSearch.match(/back|java|api|data|sql|server/)) return { Icon: Server, colorClass: 'text-slate-500', bgClass: 'bg-slate-100', activeBg: 'bg-gradient-to-br from-slate-600 to-slate-700' };
     if (textToSearch.match(/full|master|dev|cloud|docker/)) return { Icon: Layers, colorClass: 'text-emerald-500', bgClass: 'bg-emerald-50', activeBg: 'bg-gradient-to-br from-emerald-500 to-emerald-600' };
-    
+
     const fallbacks = [
         { Icon: Zap, colorClass: 'text-orange-500', bgClass: 'bg-orange-50', activeBg: 'bg-gradient-to-br from-orange-500 to-orange-600' },
         { Icon: Layers, colorClass: 'text-emerald-500', bgClass: 'bg-emerald-50', activeBg: 'bg-gradient-to-br from-emerald-500 to-emerald-600' },
@@ -171,24 +172,24 @@ export default function ModulesInCoursePage() {
     const { studentId } = useAuth();
     const { courseId } = useParams<{ courseId: string }>();
     const navigate = useNavigate();
-    
+
     const [myCourses, setMyCourses] = useState<DashboardCourse[]>([]);
     const [activeCourseId, setActiveCourseId] = useState<string>("");
-    
+
     const [modules, setModules] = useState<ModuleResponse[]>([]);
     const [displayModules, setDisplayModules] = useState<any[]>([]);
     const [isLoadingModules, setIsLoadingModules] = useState<boolean>(false);
-    
+
     const [topicCounts, setTopicCounts] = useState<Record<string, number>>({});
     const [moduleProgress, setModuleProgress] = useState<Record<string, { total: number, completed: number }>>({});
-    
+
     // Cập nhật State cho Bố cục: slider | grid | list
     const [layout, setLayout] = useState<'slider' | 'grid' | 'list'>('slider');
     const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
 
     useEffect(() => {
         // Nếu chưa có studentId thì return luôn để không gọi API lỗi
-        if (!studentId) return; 
+        if (!studentId) return;
 
         // 2. Gọi hàm khởi tạo Rank ngầm ở background (Không dùng await để không làm chậm trang)
         initStudentRankIfNeeded(studentId);
@@ -205,7 +206,7 @@ export default function ModulesInCoursePage() {
             setIsLoadingModules(true);
             try {
                 const data = await getModulesByCourseId(activeCourseId);
-                
+
                 // --- THÊM LOGIC SẮP XẾP TẠI ĐÂY ---
                 // Sắp xếp theo thời gian tạo từ Cũ -> Mới (Tăng dần)
                 const sortedData = data.sort((a, b) => {
@@ -213,7 +214,7 @@ export default function ModulesInCoursePage() {
                     // Lưu ý: Đổi 'createDate' thành 'createdAt' nếu backend của bạn dùng tên khác
                     const timeA = new Date(a.createDate || 0).getTime();
                     const timeB = new Date(b.createDate || 0).getTime();
-                    
+
                     return timeA - timeB; // timeA - timeB là Cũ -> Mới. (Nếu muốn Mới -> Cũ thì timeB - timeA)
                 });
 
@@ -230,9 +231,9 @@ export default function ModulesInCoursePage() {
     useEffect(() => {
         let active = true;
         const fetchTopicsAndVideo = async () => {
-            if (modules.length === 0 || !studentId) return; 
+            if (modules.length === 0 || !studentId) return;
             setPreviewVideoUrl(null);
-            
+
             try {
                 const progressData = await getProgressByStudent(studentId).catch(() => []);
                 const progressArray = Array.isArray(progressData) ? progressData : (progressData.data || []);
@@ -243,14 +244,12 @@ export default function ModulesInCoursePage() {
                 const counts: Record<string, number> = {};
                 const progressMap: Record<string, { total: number, completed: number }> = {};
                 let foundVideo = false;
-                
-                const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
-                
+
                 const topicResults = await Promise.all(
                     modules.map(mod => getTopicsByModule(mod.id).catch(() => []))
                 );
 
-                let isPreviousCompleted = true; 
+                let isPreviousCompleted = true;
 
                 const enhancedModules = modules.map((mod, idx) => {
                     const topics = topicResults[idx] || [];
@@ -258,7 +257,7 @@ export default function ModulesInCoursePage() {
 
                     let totalLessons = 0;
                     let completedLessons = 0;
-                    
+
                     topics.forEach((topic: any) => {
                         if (topic.lessons) {
                             topic.lessons.forEach((l: any) => {
@@ -267,7 +266,7 @@ export default function ModulesInCoursePage() {
                             });
                         }
                     });
-                    
+
                     progressMap[mod.id] = { total: totalLessons, completed: completedLessons };
 
                     const isModuleCompleted = totalLessons > 0 ? (completedLessons === totalLessons) : true;
@@ -293,13 +292,14 @@ export default function ModulesInCoursePage() {
                         if (foundVideo) break;
                         const lecture = topic.lessons?.find((l: any) => l.type === "LECTURE");
                         if (lecture) {
-                            const res = await fetch(`${API_BASE_URL}/lessons/${lecture.id}`);
-                            if (res.ok) {
-                                const detail = await res.json();
-                                if (detail.videoUrl && active) {
+                            try {
+                                const { data: detail } = await apiClient.get(`/lessons/${lecture.id}`);
+                                if (detail?.videoUrl && active) {
                                     setPreviewVideoUrl(detail.videoUrl);
                                     foundVideo = true;
                                 }
+                            } catch {
+                                // Bỏ qua lesson lỗi, không chặn luồng quét video khác
                             }
                         }
                     }
@@ -308,7 +308,7 @@ export default function ModulesInCoursePage() {
                 console.error("Lỗi quét topics/video/progress:", e);
             }
         };
-        
+
         fetchTopicsAndVideo();
         return () => { active = false; };
     }, [modules, studentId]);
@@ -375,25 +375,25 @@ export default function ModulesInCoursePage() {
                             <ChevronRight className="w-3.5 h-3.5 text-slate-300"/>
                             <span className="text-slate-700 font-semibold truncate max-w-[180px] sm:max-w-none">{activeCourseData.courseName}</span>
                         </div>
-                        
+
                         {/* TRÌNH ĐIỀU KHIỂN BỐ CỤC MỚI (SLIDER / GRID / LIST) */}
                         <div className="flex items-center bg-slate-100/80 p-1 rounded-lg">
-                            <button 
-                                onClick={() => setLayout('slider')} 
+                            <button
+                                onClick={() => setLayout('slider')}
                                 className={`p-1.5 rounded-md transition-all ${layout === 'slider' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/50'}`}
                                 title="Trượt ngang"
                             >
                                 <Columns className="w-4 h-4"/>
                             </button>
-                            <button 
-                                onClick={() => setLayout('grid')} 
+                            <button
+                                onClick={() => setLayout('grid')}
                                 className={`p-1.5 rounded-md transition-all ${layout === 'grid' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/50'}`}
                                 title="Dạng lưới"
                             >
                                 <Grid3x3 className="w-4 h-4"/>
                             </button>
-                            <button 
-                                onClick={() => setLayout('list')} 
+                            <button
+                                onClick={() => setLayout('list')}
                                 className={`p-1.5 rounded-md transition-all ${layout === 'list' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/50'}`}
                                 title="Dạng danh sách"
                             >
@@ -406,7 +406,7 @@ export default function ModulesInCoursePage() {
                         <section className="w-full bg-slate-900 rounded-3xl overflow-hidden shadow-2xl shadow-slate-900/30 relative transition-all duration-500">
                             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(249,115,22,0.2),transparent_70%)]"/>
                             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(249,115,22,0.08),transparent_60%)]"/>
-                            
+
                             <div className="relative z-10 p-8 sm:p-10 lg:p-12 flex flex-col xl:flex-row items-center gap-8 xl:gap-12">
                                 <div className="flex-1 flex flex-col gap-6 w-full">
                                     <div className="flex items-center gap-3 flex-wrap">
@@ -426,7 +426,7 @@ export default function ModulesInCoursePage() {
                                     <p className="text-base text-slate-300 max-w-xl leading-relaxed line-clamp-3">
                                         {activeCourseData.description || "Nâng cao kỹ thuật lập trình qua dự án thực tế. Quản lý thời gian, tối ưu hiệu suất và chuẩn bị cho môi trường làm việc."}
                                     </p>
-                                    
+
                                     <div className="flex flex-wrap items-center gap-6 pt-2">
                                         <button className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-bold active:scale-95 transition-all shadow-lg shadow-orange-500/30 flex items-center gap-2 text-sm">
                                             <Play className="w-4 h-4 fill-current"/>
@@ -444,7 +444,7 @@ export default function ModulesInCoursePage() {
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div className="w-full xl:w-[340px] shrink-0 aspect-[4/3] bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden relative shadow-2xl flex flex-col">
                                     <div className="w-full h-9 bg-slate-900 border-b border-slate-700 flex items-center px-4 gap-2 shrink-0">
                                         <div className="w-2.5 h-2.5 rounded-full bg-red-500 hover:bg-red-600 transition cursor-pointer"/>
@@ -452,7 +452,7 @@ export default function ModulesInCoursePage() {
                                         <div className="w-2.5 h-2.5 rounded-full bg-green-500 hover:bg-green-600 transition cursor-pointer"/>
                                         <span className="ml-auto text-xs text-slate-500 font-mono">Preview Course.tsx</span>
                                     </div>
-                                    
+
                                     {previewVideoUrl ? (
                                         <PreviewVideoPlayer videoUrl={previewVideoUrl} />
                                     ) : (
@@ -483,7 +483,7 @@ export default function ModulesInCoursePage() {
                                     <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">Danh sách Module</h2>
                                     <p className="text-sm text-slate-500 mt-1">{displayModules.length} module</p>
                                 </div>
-                                
+
                                 {/* Nút mũi tên chỉ hiện nếu đang ở chế độ SLIDER */}
                                 {layout === 'slider' && (
                                     <div className="flex items-center gap-2">
@@ -498,13 +498,13 @@ export default function ModulesInCoursePage() {
                             </div>
 
                             {/* CONTAINER THEO DYNAMIC LAYOUT */}
-                            <div id="modules-scroll" 
+                            <div id="modules-scroll"
                                  className={
-                                     layout === 'grid' 
-                                         ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 pt-4 pb-6" 
+                                     layout === 'grid'
+                                         ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 pt-4 pb-6"
                                          : layout === 'list'
-                                         ? "flex flex-col gap-4 pt-4 pb-6"
-                                         : "flex gap-5 overflow-x-auto pt-4 pb-6 px-4 -mx-4 snap-x snap-mandatory scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                                             ? "flex flex-col gap-4 pt-4 pb-6"
+                                             : "flex gap-5 overflow-x-auto pt-4 pb-6 px-4 -mx-4 snap-x snap-mandatory scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
                                  }>
                                 {isLoadingModules ? (
                                     <div className="text-slate-500 font-medium px-4">Đang tải danh sách module...</div>
@@ -512,24 +512,24 @@ export default function ModulesInCoursePage() {
                                     <div className="text-slate-500 font-medium px-4">Chưa có module nào trong khóa học này.</div>
                                 ) : (
                                     displayModules.map((mod, index) => {
-                                        const isUnlocked = mod.isUnlocked; 
+                                        const isUnlocked = mod.isUnlocked;
                                         const displayNumber = String(index + 1).padStart(2, '0');
-                                        
+
                                         const modProgress = moduleProgress[mod.id] || { total: 0, completed: 0 };
                                         const modPercent = modProgress.total > 0 ? Math.round((modProgress.completed / modProgress.total) * 100) : 0;
 
                                         // RENDER GIAO DIỆN DẠNG LIST
                                         if (layout === 'list') {
                                             return (
-                                                <div 
-                                                    key={mod.id} 
-                                                    onClick={() => isUnlocked && navigate(`/topics/${mod.id}`, { state: { courseId: activeCourseId, courseName: activeCourseData.courseName, moduleName: mod.moduleName } })} 
+                                                <div
+                                                    key={mod.id}
+                                                    onClick={() => isUnlocked && navigate(`/topics/${mod.id}`, { state: { courseId: activeCourseId, courseName: activeCourseData.courseName, moduleName: mod.moduleName } })}
                                                     className={`w-full flex items-center gap-3 sm:gap-5 p-3 sm:p-4 rounded-2xl border transition-all duration-300 ${isUnlocked ? 'bg-white border-slate-200 hover:border-orange-300 hover:shadow-md cursor-pointer' : 'bg-slate-50 border-slate-100 opacity-75 cursor-not-allowed group'}`}
                                                 >
                                                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg shrink-0 ${isUnlocked ? 'bg-orange-50 text-orange-500' : 'bg-slate-100 text-slate-400'}`}>
                                                         {displayNumber}
                                                     </div>
-                                                    
+
                                                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                                                         <div className="flex items-center gap-2 mb-1">
                                                             <h3 className={`text-base font-bold truncate leading-none ${isUnlocked ? 'text-slate-900' : 'text-slate-500'}`}>{mod.moduleName}</h3>
@@ -548,7 +548,7 @@ export default function ModulesInCoursePage() {
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    
+
                                                     {isUnlocked ? (
                                                         <div className="flex items-center gap-4 shrink-0 pl-2 border-l border-slate-100">
                                                             <div className="hidden md:flex flex-col items-end gap-1.5 w-32">
@@ -580,14 +580,14 @@ export default function ModulesInCoursePage() {
 
                                         // RENDER GIAO DIỆN DẠNG SLIDER VÀ GRID (Mặc định)
                                         const cardWidthClass = layout === 'grid' ? 'w-full' : 'w-[280px] sm:w-[300px] shrink-0 snap-start';
-                                        
+
                                         if (isUnlocked) {
                                             return (
                                                 <div key={mod.id} onClick={() => navigate(`/topics/${mod.id}`, { state: { courseId: activeCourseId, courseName: activeCourseData.courseName, moduleName: mod.moduleName } })} className={`${cardWidthClass} cursor-pointer`}>
                                                     <div className="h-full bg-white rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden shadow-lg hover:shadow-xl shadow-orange-500/10 ring-2 ring-orange-500 hover:-translate-y-1 transition-all duration-300">
                                                         <div className="absolute -top-16 -right-16 w-40 h-40 bg-orange-500/10 rounded-full blur-3xl pointer-events-none"/>
                                                         <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-orange-500/5 rounded-full blur-2xl pointer-events-none"/>
-                                                        
+
                                                         <div className="flex items-start justify-between relative z-10">
                                                             <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center font-bold text-base">
                                                                 {displayNumber}
