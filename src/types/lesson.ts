@@ -12,6 +12,11 @@ export interface Lesson {
     language: string | null;
     createdAt: string;
     updatedAt: string;
+    courseId?: string;
+    module?: {
+        id?: string;
+        courseId?: string;
+    };
 }
 
 export interface LessonSummary {
