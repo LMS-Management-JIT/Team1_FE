@@ -4,8 +4,7 @@ import type {
     DashboardTeacher,
 } from "../types/dashboard";
 
-import { getAuthConfig } from './authService';
-import axios from "axios";
+import { apiClient } from "./apiClient";
 
 export type DashboardResponse = {
     courses: DashboardCourse[];                   // Danh sách khóa học để chạy Carousel
@@ -13,54 +12,37 @@ export type DashboardResponse = {
     teachers: DashboardTeacher[];
 }
 
-// 💡 TẠO INSTANCE AXIOS CHUNG TRỎ THẲNG ĐẾN ĐƯỜNG DẪN GỐC CỦA DASHBOARD
-const dashboardClient = axios.create({
-    baseURL: 'http://localhost:8080/api/dashboard', // Đã chuyển hẳn sang cụm /api/dashboard
-    timeout: 8000,
-});
-
-// 💡 INTERCEPTOR TỰ ĐỘNG ĐÍNH KÈM Bearer Token VÀO HEADER CHO MỌI REQUEST
-dashboardClient.interceptors.request.use((config) => {
-    const authConfig = getAuthConfig();
-    if (authConfig.headers) {
-        config.headers = {
-            ...config.headers,
-            ...authConfig.headers,
-        } as any;
-    }
-    return config;
-});
-
-// --- CÁC PHƯƠNG THỨC GỌI API ĐỒNG BỘ TOKEN (DÙNG AXIOS & BỎ DẤU '/' Ở ĐẦU ĐỂ GHÉP LINK CHUẨN) ---
+// 💡 Dùng chung apiClient (baseURL theo VITE_API_BASE_URL, timeout 30s, tự gắn Bearer token)
+// thay vì tạo axios instance riêng với baseURL cứng + timeout 8s dễ gây timeout giả.
 
 export async function getStudentCourses(studentId: string): Promise<DashboardCourse[]> {
-    // URL đầy đủ sẽ là: http://localhost:8080/api/dashboard/students/{studentId}/courses
-    const response = await dashboardClient.get<DashboardCourse[]>(
-        `students/${studentId}/courses`
+    // URL đầy đủ: {VITE_API_BASE_URL}/dashboard/students/{studentId}/courses
+    const response = await apiClient.get<DashboardCourse[]>(
+        `/dashboard/students/${studentId}/courses`
     );
     return response.data;
 }
 
 export async function getStudentCourseProgress(studentId: string): Promise<DashboardCourseProgress[]> {
-    // URL đầy đủ sẽ là: http://localhost:8080/api/dashboard/students/{studentId}/course-progress
-    const response = await dashboardClient.get<DashboardCourseProgress[]>(
-        `students/${studentId}/course-progress`
+    // URL đầy đủ: {VITE_API_BASE_URL}/dashboard/students/{studentId}/course-progress
+    const response = await apiClient.get<DashboardCourseProgress[]>(
+        `/dashboard/students/${studentId}/course-progress`
     );
     return response.data;
 }
 
 export async function getStudentTeachers(studentId: string): Promise<DashboardTeacher[]> {
-    // URL đầy đủ sẽ là: http://localhost:8080/api/dashboard/students/{studentId}/teachers
-    const response = await dashboardClient.get<DashboardTeacher[]>(
-        `students/${studentId}/teachers`
+    // URL đầy đủ: {VITE_API_BASE_URL}/dashboard/students/{studentId}/teachers
+    const response = await apiClient.get<DashboardTeacher[]>(
+        `/dashboard/students/${studentId}/teachers`
     );
     return response.data;
 }
 
 export async function getAllTeachers(): Promise<DashboardTeacher[]> {
-    // URL đầy đủ sẽ là: http://localhost:8080/api/dashboard/teachers
-    const response = await dashboardClient.get<DashboardTeacher[]>(
-        `teachers`
+    // URL đầy đủ: {VITE_API_BASE_URL}/dashboard/teachers
+    const response = await apiClient.get<DashboardTeacher[]>(
+        `/dashboard/teachers`
     );
     return response.data;
 }

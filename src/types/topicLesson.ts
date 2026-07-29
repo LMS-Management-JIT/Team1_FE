@@ -3,6 +3,7 @@ import type {LessonSummary} from "./lesson.ts";
 export interface TopicSummary {
     id: string;
     topicName: string;
+    courseId?: string;
 }
 
 export interface TopicWithLessons extends TopicSummary {

@@ -16,7 +16,7 @@ interface PracticeContentProps {
     isSubmitting: boolean;
     isDeleting: boolean;
     onQuizSubmitted?: (result: QuizSubmissionResult, attempts: number) => void;
-    isCompleted?: boolean; // BỔ SUNG DÒNG NÀY
+    isCompleted?: boolean;
 }
 
 type Tab = "assignment" | "submission" | "quiz";
@@ -60,7 +60,11 @@ export function PracticeContent({
             </div>
 
             {tab === "assignment" && (
-                <SafeHtmlContent html={lesson.content} fallback="Đề bài đang được cập nhật."/>
+                <SafeHtmlContent
+                    html={lesson.content}
+                    fallback="Đề bài đang được cập nhật."
+                    defaultLanguage={lesson.language ?? undefined}
+                />
             )}
 
             {tab === "submission" && (

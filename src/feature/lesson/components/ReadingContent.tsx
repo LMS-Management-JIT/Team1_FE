@@ -12,7 +12,7 @@ export function ReadingContent({lesson, lessonOrder}: ReadingContentProps) {
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-orange-500">
                 Bài {lessonOrder ?? "?"} · Tài liệu đọc
             </p>
-            <SafeHtmlContent html={lesson.content}/>
+            <SafeHtmlContent html={lesson.content} defaultLanguage={lesson.language ?? undefined}/>
         </div>
     );
 }
