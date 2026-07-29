@@ -70,7 +70,10 @@ function loadTopicChat(topicId: string): StoredTopicChat {
         const parsed = JSON.parse(raw) as StoredTopicChat;
         return {
             messages: Array.isArray(parsed.messages) ? parsed.messages : [],
-            remainingPrompts: typeof parsed.remainingPrompts === "number" ? parsed.remainingPrompts : null,
+            remainingPrompts:
+                typeof parsed.remainingPrompts === "number" && parsed.remainingPrompts >= 0
+                    ? parsed.remainingPrompts
+                    : null,
         };
     } catch {
         return { messages: [], remainingPrompts: null };
@@ -210,7 +213,12 @@ export function LessonAiAssistant({ topicId, topicName, lessonId, lessonTitle }:
                     lessonTitle,
                 },
             ]);
-            setRemainingPrompts(data.remainingPrompts);
+            if (data.remainingPrompts >= 0) {
+                setRemainingPrompts(data.remainingPrompts);
+            } else {
+                setRemainingPrompts(null);
+                setError("Chưa thể kiểm tra số lượt hỏi AI còn lại.");
+            }
         } catch (requestError: any) {
             const status = requestError?.response?.status;
             setError(status === 401
