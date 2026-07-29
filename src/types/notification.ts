@@ -18,3 +18,15 @@ export interface AppNotification {
     isRead: boolean;
     createdAt: string;
 }
+
+export type UnifiedNotificationSource = "account" | "student";
+
+export interface UnifiedNotification {
+    id: string;
+    source: UnifiedNotificationSource;
+    title: string;
+    message: string;
+    isRead: boolean;
+    createdAt: string;
+    rawType: string;
+}

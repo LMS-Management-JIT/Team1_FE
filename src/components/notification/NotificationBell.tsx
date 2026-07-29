@@ -1,16 +1,30 @@
 import { useEffect, useRef, useState } from "react";
-import { Bell, Sparkles, Trophy, ClipboardCheck, BookOpen, Users, Bot, CheckCircle2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import {
+    Bell,
+    Sparkles,
+    Trophy,
+    ClipboardCheck,
+    BookOpen,
+    Users,
+    Bot,
+    CheckCircle2,
+    Megaphone,
+    ArrowRight,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import clsx from "clsx";
 import {
-    useMarkAllNotificationsAsRead,
-    useMarkNotificationAsRead,
-    useNotificationList,
-    useUnreadNotificationCount,
+    useMarkAllUnifiedAsRead,
+    useMarkUnifiedAsRead,
+    useUnifiedNotifications,
+    useUnifiedUnreadCount,
 } from "../../hooks/useNotifications";
-import type { AppNotification, NotificationType } from "../../types/notification";
+import type { UnifiedNotification } from "../../types/notification";
 
-const typeIcon: Record<NotificationType, LucideIcon> = {
+const DROPDOWN_LIMIT = 5;
+
+const typeIcon: Record<string, LucideIcon> = {
     XP_EARNED: Sparkles,
     RANK_UP: Trophy,
     SUBMISSION_GRADED: ClipboardCheck,
@@ -19,6 +33,9 @@ const typeIcon: Record<NotificationType, LucideIcon> = {
     LESSON_REMINDER: BookOpen,
     AI_QUOTA_RESET: Bot,
     LESSON_COMPLETED: CheckCircle2,
+    SYSTEM: Bell,
+    CLASS: Megaphone,
+    ATTENDANCE: ClipboardCheck,
 };
 
 function formatTime(iso: string): string {
@@ -37,16 +54,24 @@ function formatTime(iso: string): string {
 
 interface NotificationBellProps {
     studentId: string | null;
+    accountId: string | null;
 }
 
-export function NotificationBell({ studentId }: NotificationBellProps) {
+export function NotificationBell({ studentId, accountId }: NotificationBellProps) {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    const { data: unreadCount = 0 } = useUnreadNotificationCount(studentId ?? undefined);
-    const { data: notifications = [], isLoading } = useNotificationList(studentId ?? undefined, isOpen);
-    const { mutate: markOneRead } = useMarkNotificationAsRead(studentId ?? undefined);
-    const { mutate: markAllRead } = useMarkAllNotificationsAsRead(studentId ?? undefined);
+    const unreadCount = useUnifiedUnreadCount(accountId ?? undefined, studentId ?? undefined);
+    const { data: notifications = [], isLoading } = useUnifiedNotifications(
+        accountId ?? undefined,
+        studentId ?? undefined,
+        isOpen
+    );
+    const { mutate: markOneRead } = useMarkUnifiedAsRead(accountId ?? undefined, studentId ?? undefined);
+    const { mutate: markAllRead } = useMarkAllUnifiedAsRead(accountId ?? undefined, studentId ?? undefined);
+
+    const visibleNotifications = notifications.slice(0, DROPDOWN_LIMIT);
+    const hasMore = notifications.length > DROPDOWN_LIMIT;
 
     useEffect(() => {
         function handleClickOutside(e: MouseEvent) {
@@ -66,8 +91,8 @@ export function NotificationBell({ studentId }: NotificationBellProps) {
         }
     };
 
-    const handleItemClick = (item: AppNotification) => {
-        if (!item.isRead) markOneRead(item.id);
+    const handleItemClick = (item: UnifiedNotification) => {
+        if (!item.isRead) markOneRead(item);
     };
 
     return (
@@ -85,7 +110,7 @@ export function NotificationBell({ studentId }: NotificationBellProps) {
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 top-10 z-50 max-h-96 w-80 overflow-y-auto rounded-xl bg-white py-2 text-gray-700 shadow-2xl ring-1 ring-black/5">
+                <div className="absolute right-0 top-10 z-50 w-80 overflow-hidden rounded-xl bg-white py-2 text-gray-700 shadow-2xl ring-1 ring-black/5">
                     <div className="flex items-center justify-between px-4 py-2">
                         <p className="text-sm font-semibold text-[#202020]">Thông báo</p>
                     </div>
@@ -100,11 +125,11 @@ export function NotificationBell({ studentId }: NotificationBellProps) {
                         </p>
                     )}
 
-                    {notifications.map((item) => {
-                        const Icon = typeIcon[item.type] ?? Bell;
+                    {visibleNotifications.map((item) => {
+                        const Icon = typeIcon[item.rawType] ?? Bell;
                         return (
                             <button
-                                key={item.id}
+                                key={`${item.source}-${item.id}`}
                                 type="button"
                                 onClick={() => handleItemClick(item)}
                                 className={clsx(
@@ -130,6 +155,19 @@ export function NotificationBell({ studentId }: NotificationBellProps) {
                             </button>
                         );
                     })}
+
+                    {!isLoading && notifications.length > 0 && (
+                        <Link
+                            to="/notifications"
+                            onClick={() => setIsOpen(false)}
+                            className="mt-1 flex items-center justify-center gap-1.5 border-t border-gray-100 px-4 py-2.5 text-xs font-semibold text-orange-600 transition hover:bg-orange-50"
+                        >
+                            {hasMore
+                                ? `Xem tất cả thông báo (${notifications.length})`
+                                : "Xem tất cả thông báo"}
+                            <ArrowRight size={13} />
+                        </Link>
+                    )}
                 </div>
             )}
         </div>
