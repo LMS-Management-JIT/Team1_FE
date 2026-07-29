@@ -13,27 +13,29 @@ interface LessonSidebarProps {
 }
 
 const typeIconMap = { READING: BookOpen, LECTURE: PlayCircle, PRACTICE: Code2, QUIZ: HelpCircle };
-function getLessonMeta() { return {label: "Bài", unit: "phút"}; }
+
+const LESSON_TYPE_LABEL: Record<string, string> = {
+    READING: "Bài đọc",
+    LECTURE: "Bài giảng",
+    PRACTICE: "Bài thực hành",
+    QUIZ: "Bài quiz",
+};
+
+function getLessonMeta(lesson: LessonSummary) {
+    return {
+        label: LESSON_TYPE_LABEL[lesson.type] ?? "Bài",
+        unit: "phút",
+    };
+}
 
 export function LessonSidebar({
-    topicName, lessons, currentLessonId, completedLessonIds, onSelectLesson, backToTopicsHref,
-}: LessonSidebarProps) {
+                                  topicName, lessons, currentLessonId, completedLessonIds, onSelectLesson, backToTopicsHref,
+                              }: LessonSidebarProps) {
     const safeLessons = lessons ?? [];
     const sortedLessons = [...safeLessons].sort((a, b) => a.lessonOrder - b.lessonOrder);
-    
-    // ==========================================
-    // DEBUG LOGS CHO SIDEBAR
-    // ==========================================
-    console.log("🧩 [SIDEBAR CALC] Các ID Đã Hoàn Thành nhận được từ Cha:", Array.from(completedLessonIds));
-    console.log("🧩 [SIDEBAR CALC] ID Bài học trong Sidebar:", safeLessons.map(l => l.id));
 
-    const completedCount = safeLessons.filter((l) => {
-        const isMatched = completedLessonIds.has(l.id);
-        if (isMatched) console.log(`✅ Khớp ID! Đã đếm bài: ${l.id}`);
-        return isMatched;
-    }).length;
-    
-    console.log(`📊 [SIDEBAR SCORE] Kết quả đếm: ${completedCount}/${safeLessons.length}`);
+    const completedCount = safeLessons.filter((l) => completedLessonIds.has(l.id)).length;
+
     // Tính toán % cho thanh Progress bar màu cam
     const progressPercent = safeLessons.length
         ? Math.round((completedCount / safeLessons.length) * 100)
@@ -80,7 +82,7 @@ export function LessonSidebar({
                 {sortedLessons.map((lesson) => {
                     const isCurrent = lesson.id === currentLessonId;
                     const isCompleted = completedLessonIds.has(lesson.id);
-                    const meta = getLessonMeta();
+                    const meta = getLessonMeta(lesson);
                     const TypeIcon = typeIconMap[lesson.type as keyof typeof typeIconMap] ?? BookOpen;
 
                     // Đã hoàn thành = xanh lá · đang xem = cam đặc · còn lại = xám

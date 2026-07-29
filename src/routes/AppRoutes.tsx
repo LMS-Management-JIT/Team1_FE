@@ -5,7 +5,8 @@ import { LessonDetailPage } from "../feature/lesson/pages/LessonDetailPage";
 import ListTopicPage from "../feature/Topic/ListTopicPage.tsx";
 import LoginPage from '../feature/login/LoginPage'
 import { PublicRoute } from "../components/auth/PublicRoute.tsx";
-import { ProtectedRoute } from "../components/auth/PrivateRoute.tsx"; // 🔑 THÊM
+import { ProtectedRoute } from "../components/auth/PrivateRoute.tsx";
+import NotificationsPage from '../feature/notifications/NotificationsPage';
 import ForbiddenPage from '../pages/ForbiddenPage'
 import RankPage from "../feature/rank/RankPage";
 
@@ -68,7 +69,7 @@ export const AppRoutes = () => {
                 }
             />
             <Route path="/topics" element={<Navigate to="/topics/1" replace/>}/>
-
+<Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
             {/* Bảng xếp hạng — cần đăng nhập */}
             <Route
                 path="/rank"

@@ -23,6 +23,7 @@ export interface SearchResultItem {
     moduleId?: string;
     topicId?: string;
     normalizedTitle: string;
+    teacher?: DashboardTeacher;
 }
 
 interface ModuleWithCourse {
@@ -147,14 +148,14 @@ export function useGlobalSearchIndex(
             });
         });
 
-        // Giáo viên
         teachers.forEach((t) => {
             items.push({
                 type: "teacher",
-                id: t.id,
+                id: t.accountId ?? t.id,
                 title: t.fullName,
                 subtitle: t.specialization || t.phoneNumber,
                 normalizedTitle: normalizeSearchText(t.fullName),
+                teacher: t,
             });
         });
 
@@ -209,7 +210,6 @@ export function useGlobalSearchIndex(
     return { index, isLoading };
 }
 
-// Lọc chỉ mục theo từ khoá đã chuẩn hoá, ưu tiên kết quả khớp ở vị trí đầu chuỗi
 export function filterSearchIndex(
     index: SearchResultItem[],
     query: string,

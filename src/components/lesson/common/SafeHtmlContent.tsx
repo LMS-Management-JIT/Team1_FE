@@ -1,8 +1,15 @@
 import DOMPurify from "dompurify";
-import hljs from "highlight.js/lib/common";
-import "highlight.js/styles/vs2015.css";
-import {useEffect, useMemo, useRef} from "react";
+import hljs from "highlight.js/lib/core";
+import java from "highlight.js/lib/languages/java";
+import javascript from "highlight.js/lib/languages/javascript";
+import xml from "highlight.js/lib/languages/xml";
+import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
+
+// Đăng ký ngôn ngữ thủ công để tránh lỗi mất file của Bundler
+hljs.registerLanguage("java", java);
+hljs.registerLanguage("javascript", javascript);
+hljs.registerLanguage("html", xml);
 
 interface SafeHtmlContentProps {
     html: string | null | undefined;
@@ -20,36 +27,147 @@ const ALLOWED_TAGS = [
     "table", "thead", "tbody", "tr", "th", "td",
 ];
 
+// Khôi phục lại hàm của bạn để tự động xuống dòng và lùi lề cho code từ Firebase
+function normalizeCodeBlock(rawCode: string): string {
+    if (!rawCode) return rawCode;
+    if (rawCode.includes("\n")) return rawCode;
+
+    const src = rawCode.trim();
+    let output = "";
+    let inString: '"' | "'" | null = null;
+    let i = 0;
+
+    while (i < src.length) {
+        const c = src[i];
+        if (inString) {
+            output += c;
+            if (c === "\\" && i + 1 < src.length) {
+                output += src[i + 1];
+                i += 2;
+                continue;
+            }
+            if (c === inString) {
+                inString = null;
+            }
+            i++;
+            continue;
+        }
+        if (c === '"' || c === "'") {
+            inString = c;
+            output += c;
+            i++;
+            continue;
+        }
+        if (c === "{") {
+            output += "{\n";
+            i++;
+            continue;
+        }
+        if (c === "}") {
+            output = output.replace(/[ \t]+$/, "");
+            output += "\n}\n";
+            i++;
+            continue;
+        }
+        if (c === ";") {
+            output += ";\n";
+            i++;
+            continue;
+        }
+        output += c;
+        i++;
+    }
+
+    const rawLines = output
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+
+    const lines: string[] = [];
+    for (const line of rawLines) {
+        if (line === ";" && lines.length > 0) {
+            lines[lines.length - 1] += ";";
+        } else {
+            lines.push(line);
+        }
+    }
+
+    let indentLevel = 0;
+    const indented = lines.map((line) => {
+        if (line.startsWith("}")) {
+            indentLevel = Math.max(0, indentLevel - 1);
+        }
+        const formatted = "    ".repeat(indentLevel) + line;
+        if (line.endsWith("{")) {
+            indentLevel += 1;
+        }
+        return formatted;
+    });
+
+    return indented.join("\n");
+}
+
 export function SafeHtmlContent({
                                     html,
                                     fallback = "Nội dung đang được cập nhật.",
                                     className,
                                 }: SafeHtmlContentProps) {
-    const containerRef = useRef<HTMLDivElement>(null);
-
+    // 1. Sanitize HTML ban đầu
     const cleanHtml = useMemo(() => {
         if (!html) return null;
-
         return DOMPurify.sanitize(html, {
             ALLOWED_TAGS,
             ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "class"],
         });
     }, [html]);
 
-    useEffect(() => {
-        if (!containerRef.current) return;
+    // 2. State lưu trữ HTML ĐÃ ĐƯỢC TÔ MÀU (Bí quyết nằm ở đây)
+    const [highlightedHtml, setHighlightedHtml] = useState<string | null>(null);
 
-        containerRef.current.querySelectorAll("pre code").forEach((block) => {
-            const el = block as HTMLElement;
-            el.removeAttribute("data-highlighted");
-            el.classList.remove("language-undefined");
+    // 3. Xử lý highlight hoàn toàn trong bộ nhớ (JS), không đụng vào DOM của React
+    useEffect(() => {
+        if (!cleanHtml) {
+            setHighlightedHtml(null);
+            return;
+        }
+
+        // Tạo một DOM ảo trong bộ nhớ để phân tích HTML
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(cleanHtml, "text/html");
+        const codeBlocks = doc.querySelectorAll("pre code");
+        let hasCode = false;
+
+        codeBlocks.forEach((codeEl) => {
+            hasCode = true;
+            const rawText = codeEl.textContent ?? "";
+            // Gọi lại hàm để format code rành mạch
+            const normalized = normalizeCodeBlock(rawText);
+
+            const match = codeEl.className.match(/language-(\w+)/);
+            const lang = match ? match[1] : "java";
+
+            // Bắt buộc thêm class hljs để nhận CSS nền
+            codeEl.className = `language-${lang} hljs`;
 
             try {
-                hljs.highlightElement(el);
+                // Highlight text thuần thành mã HTML (chứa các thẻ span màu sắc)
+                const result = hljs.highlight(normalized, {
+                    language: lang,
+                    ignoreIllegals: true,
+                });
+                codeEl.innerHTML = result.value;
             } catch (err) {
-                console.warn("[SafeHtmlContent] Bỏ qua 1 khối code do lỗi highlight:", err);
+                console.error("[SafeHtmlContent] Lỗi highlight:", err);
+                codeEl.textContent = normalized; // Fallback nếu lỗi
             }
         });
+
+        // Nếu có thẻ code, cập nhật state với toàn bộ HTML đã được bọc màu
+        if (hasCode) {
+            setHighlightedHtml(doc.body.innerHTML);
+        } else {
+            setHighlightedHtml(cleanHtml);
+        }
     }, [cleanHtml]);
 
     if (!cleanHtml) {
@@ -58,27 +176,35 @@ export function SafeHtmlContent({
 
     return (
         <div
-            ref={containerRef}
             className={clsx(
                 "max-w-none text-[15px] leading-7 text-gray-700",
+
                 "[&_h1]:mt-6 [&_h1]:mb-3 [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-gray-900",
                 "[&_h2]:mt-6 [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-gray-900",
                 "[&_h3]:mt-5 [&_h3]:mb-2 [&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-orange-600",
                 "[&_h4]:mt-4 [&_h4]:mb-2 [&_h4]:text-base [&_h4]:font-semibold [&_h4]:text-gray-900",
+
                 "[&_p]:mb-3",
                 "[&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-6",
                 "[&_ol]:mb-3 [&_ol]:list-decimal [&_ol]:pl-6",
                 "[&_li]:mb-1",
+
                 "[&_a]:text-orange-600 [&_a]:underline",
                 "[&_strong]:font-semibold [&_strong]:text-gray-900",
+
                 "[&_blockquote]:border-l-4 [&_blockquote]:border-orange-300 [&_blockquote]:bg-orange-50 [&_blockquote]:px-4 [&_blockquote]:py-2 [&_blockquote]:text-gray-600",
+
+                // Inline code
                 "[&_:not(pre)>code]:rounded [&_:not(pre)>code]:bg-gray-100 [&_:not(pre)>code]:px-1.5 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:text-orange-600 [&_:not(pre)>code]:font-mono [&_:not(pre)>code]:text-[13px]",
-                "[&_pre]:mb-4 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-[#1e1e1e] [&_pre]:p-0 [&_pre]:font-mono",
+
+                // Code block
+                "[&_pre]:mb-4 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-[#1e1e1e] [&_pre]:p-4 [&_pre]:font-mono [&_pre]:text-gray-200 [&_pre]:leading-snug",
                 "[&_pre_code]:font-mono",
+
                 className
             )}
-            // eslint-disable-next-line react/no-danger -- html đã qua DOMPurify.sanitize ở trên
-            dangerouslySetInnerHTML={{__html: cleanHtml}}
+            // Nếu đã xử lý highlight xong thì dùng HTML mới, chưa thì dùng HTML tạm
+            dangerouslySetInnerHTML={{ __html: highlightedHtml || cleanHtml }}
         />
     );
 }
