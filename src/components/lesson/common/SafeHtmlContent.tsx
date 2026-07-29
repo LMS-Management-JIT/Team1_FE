@@ -1,8 +1,15 @@
 import DOMPurify from "dompurify";
-import hljs from "highlight.js/lib/common";
-import "highlight.js/styles/vs2015.css";
-import { useEffect, useMemo, useRef } from "react";
+import hljs from "highlight.js/lib/core";
+import java from "highlight.js/lib/languages/java";
+import javascript from "highlight.js/lib/languages/javascript";
+import xml from "highlight.js/lib/languages/xml";
+import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
+
+// Đăng ký ngôn ngữ thủ công để tránh lỗi mất file của Bundler
+hljs.registerLanguage("java", java);
+hljs.registerLanguage("javascript", javascript);
+hljs.registerLanguage("html", xml);
 
 interface SafeHtmlContentProps {
     html: string | null | undefined;
@@ -20,18 +27,7 @@ const ALLOWED_TAGS = [
     "table", "thead", "tbody", "tr", "th", "td",
 ];
 
-/**
- * Chuẩn hoá 1 đoạn code bị lưu dồn thành MỘT DÒNG DUY NHẤT (không có \n)
- * — đúng như cách dữ liệu đang được lưu trong Firestore hiện tại —
- * thành code nhiều dòng, có thụt lề, dựa trên các dấu `;`, `{`, `}`.
- *
- * LƯU Ý: đây KHÔNG phải là 1 parser Java đầy đủ, chỉ xử lý đủ tốt cho các
- * đoạn code mẫu ngắn trong bài học. Nếu code truyền vào đã có \n rồi thì
- * trả về nguyên vẹn, không đụng vào.
- *
- * (Đặt trực tiếp trong file này thay vì file riêng để tránh trường hợp
- * dev server chưa nhận diện module mới.)
- */
+// Khôi phục lại hàm của bạn để tự động xuống dòng và lùi lề cho code từ Firebase
 function normalizeCodeBlock(rawCode: string): string {
     if (!rawCode) return rawCode;
     if (rawCode.includes("\n")) return rawCode;
@@ -43,7 +39,6 @@ function normalizeCodeBlock(rawCode: string): string {
 
     while (i < src.length) {
         const c = src[i];
-
         if (inString) {
             output += c;
             if (c === "\\" && i + 1 < src.length) {
@@ -57,33 +52,28 @@ function normalizeCodeBlock(rawCode: string): string {
             i++;
             continue;
         }
-
         if (c === '"' || c === "'") {
             inString = c;
             output += c;
             i++;
             continue;
         }
-
         if (c === "{") {
             output += "{\n";
             i++;
             continue;
         }
-
         if (c === "}") {
             output = output.replace(/[ \t]+$/, "");
             output += "\n}\n";
             i++;
             continue;
         }
-
         if (c === ";") {
             output += ";\n";
             i++;
             continue;
         }
-
         output += c;
         i++;
     }
@@ -107,13 +97,10 @@ function normalizeCodeBlock(rawCode: string): string {
         if (line.startsWith("}")) {
             indentLevel = Math.max(0, indentLevel - 1);
         }
-
         const formatted = "    ".repeat(indentLevel) + line;
-
         if (line.endsWith("{")) {
             indentLevel += 1;
         }
-
         return formatted;
     });
 
@@ -125,81 +112,62 @@ export function SafeHtmlContent({
                                     fallback = "Nội dung đang được cập nhật.",
                                     className,
                                 }: SafeHtmlContentProps) {
-    const containerRef = useRef<HTMLDivElement>(null);
-
+    // 1. Sanitize HTML ban đầu
     const cleanHtml = useMemo(() => {
         if (!html) return null;
-
         return DOMPurify.sanitize(html, {
             ALLOWED_TAGS,
             ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "class"],
         });
     }, [html]);
 
-    useEffect(() => {
-        console.log("%c[SafeHtmlContent] EFFECT CHẠY - version debug", "color: lime; font-weight: bold; font-size: 14px");
+    // 2. State lưu trữ HTML ĐÃ ĐƯỢC TÔ MÀU (Bí quyết nằm ở đây)
+    const [highlightedHtml, setHighlightedHtml] = useState<string | null>(null);
 
-        if (!containerRef.current) {
-            console.log("[SafeHtmlContent] containerRef.current là null, thoát sớm");
+    // 3. Xử lý highlight hoàn toàn trong bộ nhớ (JS), không đụng vào DOM của React
+    useEffect(() => {
+        if (!cleanHtml) {
+            setHighlightedHtml(null);
             return;
         }
 
-        const preList = containerRef.current.querySelectorAll("pre");
-        console.log("[SafeHtmlContent] Số lượng <pre> tìm thấy:", preList.length);
+        // Tạo một DOM ảo trong bộ nhớ để phân tích HTML
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(cleanHtml, "text/html");
+        const codeBlocks = doc.querySelectorAll("pre code");
+        let hasCode = false;
 
-        preList.forEach((pre) => {
-            let codeEl = pre.querySelector("code") as HTMLElement | null;
-
-            if (!codeEl) {
-                codeEl = document.createElement("code");
-                codeEl.textContent = pre.textContent ?? "";
-                pre.innerHTML = "";
-                pre.appendChild(codeEl);
-            }
-
-            codeEl.classList.remove("language-undefined");
-
-            const alreadyTokenized = codeEl.querySelector('span[class*="hljs-"]') !== null;
-            console.log("[SafeHtmlContent] alreadyTokenized:", alreadyTokenized, "| rawText:", codeEl.textContent);
-
-            if (alreadyTokenized) {
-                console.log("[SafeHtmlContent] Bỏ qua vì đã tokenized rồi");
-                return;
-            }
-
-            codeEl.classList.remove("hljs");
-            codeEl.removeAttribute("data-highlighted");
-
-            // Dữ liệu trong DB nhiều bài đang bị lưu dồn code thành 1 dòng
-            // (không có \n) -> chuẩn hoá lại thành nhiều dòng, có thụt lề,
-            // trước khi đưa cho highlight.js xử lý.
+        codeBlocks.forEach((codeEl) => {
+            hasCode = true;
             const rawText = codeEl.textContent ?? "";
+            // Gọi lại hàm để format code rành mạch
             const normalized = normalizeCodeBlock(rawText);
-            console.log("[SafeHtmlContent] normalized khác rawText?", normalized !== rawText);
-            console.log("[SafeHtmlContent] normalized value:", JSON.stringify(normalized));
 
-            if (normalized !== rawText) {
-                codeEl.textContent = normalized;
-            }
+            const match = codeEl.className.match(/language-(\w+)/);
+            const lang = match ? match[1] : "java";
 
-            // Nếu tác giả nội dung không khai báo ngôn ngữ (class="language-xxx"),
-            // mặc định là Java thay vì để highlight.js tự đoán.
-            const hasLanguageClass = /language-\w+/.test(codeEl.className);
-            if (!hasLanguageClass) {
-                codeEl.classList.add("language-java");
-            }
-            console.log("[SafeHtmlContent] className trước khi highlight:", codeEl.className);
+            // Bắt buộc thêm class hljs để nhận CSS nền
+            codeEl.className = `language-${lang} hljs`;
 
             try {
-                hljs.highlightElement(codeEl);
-                console.log("[SafeHtmlContent] highlightElement THÀNH CÔNG, innerHTML sau highlight:", codeEl.innerHTML.slice(0, 200));
+                // Highlight text thuần thành mã HTML (chứa các thẻ span màu sắc)
+                const result = hljs.highlight(normalized, {
+                    language: lang,
+                    ignoreIllegals: true,
+                });
+                codeEl.innerHTML = result.value;
             } catch (err) {
-                console.warn(
-                    "[SafeHtmlContent] Bỏ qua 1 khối code do lỗi highlight:",
-                    err
-                );
+                console.error("[SafeHtmlContent] Lỗi highlight:", err);
+                codeEl.textContent = normalized; // Fallback nếu lỗi
             }
         });
+
+        // Nếu có thẻ code, cập nhật state với toàn bộ HTML đã được bọc màu
+        if (hasCode) {
+            setHighlightedHtml(doc.body.innerHTML);
+        } else {
+            setHighlightedHtml(cleanHtml);
+        }
     }, [cleanHtml]);
 
     if (!cleanHtml) {
@@ -208,7 +176,6 @@ export function SafeHtmlContent({
 
     return (
         <div
-            ref={containerRef}
             className={clsx(
                 "max-w-none text-[15px] leading-7 text-gray-700",
 
@@ -231,13 +198,13 @@ export function SafeHtmlContent({
                 "[&_:not(pre)>code]:rounded [&_:not(pre)>code]:bg-gray-100 [&_:not(pre)>code]:px-1.5 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:text-orange-600 [&_:not(pre)>code]:font-mono [&_:not(pre)>code]:text-[13px]",
 
                 // Code block
-                "[&_pre]:mb-4 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-[#1e1e1e] [&_pre]:p-0 [&_pre]:font-mono",
+                "[&_pre]:mb-4 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-[#1e1e1e] [&_pre]:p-4 [&_pre]:font-mono [&_pre]:text-gray-200 [&_pre]:leading-snug",
                 "[&_pre_code]:font-mono",
 
                 className
             )}
-            // eslint-disable-next-line react/no-danger
-            dangerouslySetInnerHTML={{ __html: cleanHtml }}
+            // Nếu đã xử lý highlight xong thì dùng HTML mới, chưa thì dùng HTML tạm
+            dangerouslySetInnerHTML={{ __html: highlightedHtml || cleanHtml }}
         />
     );
 }
