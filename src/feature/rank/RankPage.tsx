@@ -132,13 +132,26 @@ const RewardProgress = ({ currentRank }: { currentRank: number }) => {
             {/* Lời chúc động viên phía dưới */}
             <div className="mt-16 text-center">
                 {!currentRank || currentRank === 0 ? (
-                    <span className="inline-block bg-slate-100 text-slate-500 text-sm font-medium px-4 py-1.5 rounded-full">Bạn chưa có thứ hạng. Học bài ngay để đua top nhé!</span>
+                    <span className="inline-block bg-slate-100 text-slate-500 text-sm font-medium px-4 py-1.5 rounded-full">
+                        Bạn chưa có thứ hạng. Học bài ngay để đua top nhé!
+                    </span>
                 ) : currentRank > 10 ? (
-                    <span className="inline-block bg-orange-50 text-orange-600 text-sm font-medium px-4 py-1.5 rounded-full border border-orange-200">Hãy cố gắng lọt vào Top 10 để mở khóa quà đầu tiên!</span>
+                    <span className="inline-block bg-orange-50 text-orange-600 text-sm font-medium px-4 py-1.5 rounded-full border border-orange-200">
+                        Hãy cố gắng lọt vào Top 10 để mở khóa quà đầu tiên!
+                    </span>
+                ) : currentRank > 5 ? (
+                    <span className="inline-block bg-blue-50 text-blue-600 text-sm font-medium px-4 py-1.5 rounded-full border border-blue-200">
+                        Tuyệt vời! Bạn đang trên đà chinh phục phần thưởng Top 5!
+                    </span>
                 ) : currentRank > 1 ? (
-                    <span className="inline-block bg-emerald-50 text-emerald-600 text-sm font-medium px-4 py-1.5 rounded-full border border-emerald-200">Tuyệt vời! Bạn đang trên đà chinh phục phần thưởng Top 3!</span>
+                    <span className="inline-block bg-emerald-50 text-emerald-600 text-sm font-medium px-4 py-1.5 rounded-full border border-emerald-200">
+                        Xuất sắc! Bạn đang trên đà chinh phục phần thưởng Top 3!
+                    </span>
                 ) : (
-                    <span className="inline-block bg-yellow-50 text-yellow-600 text-sm font-bold px-4 py-1.5 rounded-full border border-yellow-200 shadow-sm"><Crown className="w-4 h-4 inline mb-0.5 mr-1" /> Vô địch! Bạn đã mở khóa toàn bộ rương quà!</span>
+                    <span className="inline-block bg-yellow-50 text-yellow-600 text-sm font-bold px-4 py-1.5 rounded-full border border-yellow-200 shadow-sm">
+                        <Crown className="w-4 h-4 inline mb-0.5 mr-1" />
+                        Vô địch! Bạn đã mở khóa toàn bộ rương quà!
+                    </span>
                 )}
             </div>
         </div>
