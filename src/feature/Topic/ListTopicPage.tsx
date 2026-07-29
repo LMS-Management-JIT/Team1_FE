@@ -7,7 +7,7 @@ import { Breadcrumb } from "../../components/common/Breadcrumb";
 import { CourseDocuments } from "../../components/Topic/CourseDocuments/CourseDocuments";
 import { TopicItem } from "../../components/Topic/TopicItem/TopicItem";
 import { getTopicsByModule } from "../../services/topicService";
-import { getModuleById, getModulesByCourseId } from "../../services/moduleService";
+import { getModulesByCourseId } from "../../services/moduleService";
 import { getProgressByStudent } from "../../services/lessonProgressService";
 import { useAuthContext } from "../../feature/auth/context/AuthContext";
 import type { TopicWithLessons } from "../../types/topic";
@@ -143,7 +143,7 @@ export default function ListTopicPage() {
     }, [hasAccess, moduleId]);
 
     const currentModuleTitle = moduleName ?? "Đang tải...";
-    const currentCourseTitle = courseName ?? "Khóa học của tôi";
+    const currentCourseTitle = courseName ?? "Khóa học";
 
     // Màn hình chờ trong lúc kiểm tra bảo mật
     if (!hasAccess) {
@@ -162,7 +162,7 @@ export default function ListTopicPage() {
                 {/* Breadcrumb đồng bộ với URL mới */}
                 <Breadcrumb
                     items={[
-                        { label: "Khóa học", href: "/" },
+                        { label: "Khóa học của tôi", href: "/" },
                         { label: currentCourseTitle, href: `/courses/${courseId}/modules` },
                         { label: currentModuleTitle },
                     ]}
