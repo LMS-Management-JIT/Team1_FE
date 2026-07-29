@@ -168,9 +168,17 @@ export function LessonDetailPage() {
             <div className="mx-auto w-full max-w-7xl flex-1 px-4 pt-6 pb-4 sm:px-6 sm:pt-8 lg:px-6">
                 <Breadcrumb
                     items={[
-                        { label: "Khoá học của tôi", href: "/" },
-                        { label: topic.topicName, href: topicsListHref },
-                        { label: lesson.lessonName },
+                        {
+                            label: "Trang chủ",
+                            href: lesson?.module?.courseId ? `/courses/${lesson.module.courseId}/modules` : "/dashboard"
+                        },
+                        {
+                            label: topic?.topicName || "Tên chương",
+                            href: topicsListHref
+                        },
+                        {
+                            label: lesson?.lessonName || "Tên bài học"
+                        },
                     ]}
                 />
 
