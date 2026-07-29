@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams} from "react-router-dom";
 import { useState } from "react";
 import { BookOpen } from "lucide-react";
 import { toast } from "sonner";
@@ -23,6 +23,7 @@ import { Loading } from "../../../components/lesson/ui/Loading";
 import { addXpToRank } from "../../../services/rankService";
 import { useAuthContext } from "../../../feature/auth/context/AuthContext"; // 🔑 THÊM
 import { LessonAiAssistant } from "../components/LessonAiAssistant";
+import { useCourseForModule } from "../../../hooks/useCourseForModule";
 
 export function LessonDetailPage() {
     const { topicId, lessonId } = useParams<{ topicId: string; lessonId: string }>();
@@ -35,7 +36,13 @@ export function LessonDetailPage() {
     const { data: lesson, isLoading: isLessonLoading } = useLessonDetail(lessonId, !isAuthLoading);
     const { data: topic, isLoading: isTopicLoading } = useTopicDetail(topicId, !isAuthLoading);
     const { data: moduleId } = useModuleIdForTopic(topicId, !isAuthLoading);
-    const topicsListHref = moduleId ? `/topics/${moduleId}` : undefined;
+    const { data: courseForModule } = useCourseForModule(moduleId, studentId);
+
+    const courseId = courseForModule?.courseId;
+    const topicsListHref =
+        courseId && moduleId
+            ? `/courses/${courseId}/modules/${moduleId}`
+            : undefined;
 
     // FETCH TIẾN ĐỘ
     const { data: progressList = [] } = useStudentProgress(studentId ?? undefined);
@@ -107,7 +114,12 @@ export function LessonDetailPage() {
     };
 
     const handleSelectLesson = (nextLessonId: string) => {
-        const nextRoute = buildLessonDetailPath(topic.id, nextLessonId);
+        const nextRoute = buildLessonDetailPath(
+            courseForModule!.courseId,
+            moduleId!,
+            topic.id,
+            nextLessonId
+        );
         const isCurrentLessonCompleted = completedLessonIds.has(lesson.id);
 
         if (lesson.type === "READING" && !isCurrentLessonCompleted) {
@@ -169,8 +181,8 @@ export function LessonDetailPage() {
                 <Breadcrumb
                     items={[
                         {
-                            label: "Trang chủ",
-                            href: lesson?.module?.courseId ? `/courses/${lesson.module.courseId}/modules` : "/dashboard"
+                            label: "Khoá học của tôi",
+                            href: `/courses/${courseForModule?.courseId}/modules`
                         },
                         {
                             label: topic?.topicName || "Tên chương",

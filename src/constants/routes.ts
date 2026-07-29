@@ -1,9 +1,15 @@
 export const ROUTES = {
     LOGIN: "/login",
     DASHBOARD: "/",
-    LESSON_DETAIL: "/topics/:topicId/lessons/:lessonId",
+    LESSON_DETAIL:
+        "/courses/:courseId/modules/:moduleId/topics/:topicId/lessons/:lessonId",
 } as const;
 
-export function buildLessonDetailPath(topicId: string, lessonId: string) {
-    return `/topics/${topicId}/lessons/${lessonId}`;
+export function buildLessonDetailPath(
+    courseId: string,
+    moduleId: string,
+    topicId: string,
+    lessonId: string
+) {
+    return `/courses/${courseId}/modules/${moduleId}/topics/${topicId}/lessons/${lessonId}`;
 }
