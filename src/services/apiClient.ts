@@ -41,7 +41,6 @@ apiClient.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            console.warn("🛑 Phiên đăng nhập hết hạn hoặc không hợp lệ tại apiClient. Tiến hành dọn dẹp bộ nhớ...");
 
             // Xóa sạch cookie token
             document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
