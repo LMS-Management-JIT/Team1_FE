@@ -10,6 +10,7 @@ import { getProgressByStudent } from "../../services/lessonProgressService";
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from "../../services/authService";
 import { initStudentRankIfNeeded } from "../../services/rankService";
+import { useSaveCourseProgress } from "../../hooks/useCourseProgress"; 
 
 // ==========================================
 // COMPONENT: TRÌNH PHÁT VIDEO TÙY CHỈNH
@@ -186,6 +187,8 @@ export default function ModulesInCoursePage() {
     const [layout, setLayout] = useState<'slider' | 'grid' | 'list'>('slider');
     const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
 
+    const { mutate: saveCourseProgressMutate } = useSaveCourseProgress(); 
+
     useEffect(() => {
         // Nếu chưa có studentId thì return luôn để không gọi API lỗi
         if (!studentId) return; 
@@ -250,7 +253,7 @@ export default function ModulesInCoursePage() {
                     modules.map(mod => getTopicsByModule(mod.id).catch(() => []))
                 );
 
-                let isPreviousCompleted = true; 
+                let isChainUnlocked = true; 
 
                 const enhancedModules = modules.map((mod, idx) => {
                     const topics = topicResults[idx] || [];
@@ -271,8 +274,15 @@ export default function ModulesInCoursePage() {
                     progressMap[mod.id] = { total: totalLessons, completed: completedLessons };
 
                     const isModuleCompleted = totalLessons > 0 ? (completedLessons === totalLessons) : true;
-                    const isUnlocked = isPreviousCompleted;
-                    isPreviousCompleted = isModuleCompleted;
+                    
+                    // Module hiện tại chỉ được mở nếu chuỗi khóa từ trên xuống dưới chưa bị đứt
+                    const isUnlocked = isChainUnlocked;
+
+                    // LÁ CHẮN: Nếu phát hiện module này chưa hoàn thành, 
+                    // lập tức CẮT ĐỨT chuỗi mở khóa cho TẤT CẢ các module đứng sau nó.
+                    if (!isModuleCompleted) {
+                        isChainUnlocked = false;
+                    }
 
                     return {
                         ...mod,
@@ -285,6 +295,39 @@ export default function ModulesInCoursePage() {
                     setTopicCounts(counts);
                     setModuleProgress(progressMap);
                     setDisplayModules(enhancedModules);
+
+                    // Tính tổng
+                    let overallTotal = 0;
+                    let overallCompleted = 0;
+                    Object.values(progressMap).forEach(m => {
+                        overallTotal += m.total;
+                        overallCompleted += m.completed;
+                    });
+                    
+                    const overallPercent = overallTotal > 0 ? Math.round((overallCompleted / overallTotal) * 100) : 0;
+                    
+                    console.log("🔥 [DEBUG] Chuẩn bị đồng bộ tiến độ khóa học:", { studentId, activeCourseId, overallPercent });
+
+                    // Gọi API lưu xuống Firebase
+                    if (studentId && activeCourseId) {
+                        saveCourseProgressMutate(
+                            {
+                                studentId: studentId,
+                                courseId: activeCourseId,
+                                progress: overallPercent,
+                                totalLessons: overallTotal,
+                                completedLessons: overallCompleted
+                            },
+                            {
+                                onSuccess: () => {
+                                    console.log("✅ [SUCCESS] Đã lưu tiến độ thành công vào DB Firebase!");
+                                },
+                                onError: (err) => {
+                                    console.error("❌ [ERROR] Lỗi gọi API lưu tiến độ:", err);
+                                }
+                            }
+                        );
+                    }
                 }
 
                 for (const topics of topicResults) {
@@ -357,7 +400,16 @@ export default function ModulesInCoursePage() {
                                 <div className="px-3 text-sm text-slate-400 text-center mt-4">Không có khóa học nào</div>
                             ) : (
                                 myCourses.map((course, index) => (
-                                    <SidebarCourseCard key={course.id} course={course} index={index} isActive={activeCourseId === course.id} onClick={() => setActiveCourseId(course.id)} />
+                                    <SidebarCourseCard 
+                                        key={course.id} 
+                                        course={course} 
+                                        index={index} 
+                                        isActive={activeCourseId === course.id} 
+                                        onClick={() => {
+                                            // Ép trình duyệt chuyển hướng và refresh lại toàn bộ trang
+                                            window.location.href = `/courses/${course.id}/modules`;
+                                        }} 
+                                    />
                                 ))
                             )}
                         </div>
@@ -509,7 +561,7 @@ export default function ModulesInCoursePage() {
                                 {isLoadingModules ? (
                                     <div className="text-slate-500 font-medium px-4">Đang tải danh sách module...</div>
                                 ) : displayModules.length === 0 ? (
-                                    <div className="text-slate-500 font-medium px-4">Chưa có module nào trong khóa học này.</div>
+                                    <div className="text-slate-500 font-medium px-4">Đang tải module nào trong khóa học này...</div>
                                 ) : (
                                     displayModules.map((mod, index) => {
                                         const isUnlocked = mod.isUnlocked; 
@@ -523,7 +575,7 @@ export default function ModulesInCoursePage() {
                                             return (
                                                 <div 
                                                     key={mod.id} 
-                                                    onClick={() => isUnlocked && navigate(`/topics/${mod.id}`, { state: { courseId: activeCourseId, courseName: activeCourseData.courseName, moduleName: mod.moduleName } })} 
+                                                    onClick={() => isUnlocked && navigate(`/courses/${activeCourseId}/modules/${mod.id}`, { state: { courseName: activeCourseData.courseName, moduleName: mod.moduleName } })}
                                                     className={`w-full flex items-center gap-3 sm:gap-5 p-3 sm:p-4 rounded-2xl border transition-all duration-300 ${isUnlocked ? 'bg-white border-slate-200 hover:border-orange-300 hover:shadow-md cursor-pointer' : 'bg-slate-50 border-slate-100 opacity-75 cursor-not-allowed group'}`}
                                                 >
                                                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg shrink-0 ${isUnlocked ? 'bg-orange-50 text-orange-500' : 'bg-slate-100 text-slate-400'}`}>
@@ -583,7 +635,7 @@ export default function ModulesInCoursePage() {
                                         
                                         if (isUnlocked) {
                                             return (
-                                                <div key={mod.id} onClick={() => navigate(`/topics/${mod.id}`, { state: { courseId: activeCourseId, courseName: activeCourseData.courseName, moduleName: mod.moduleName } })} className={`${cardWidthClass} cursor-pointer`}>
+                                                <div key={mod.id} onClick={() => navigate(`/courses/${activeCourseId}/modules/${mod.id}`, { state: { courseName: activeCourseData.courseName, moduleName: mod.moduleName } })} className={`${cardWidthClass} cursor-pointer`}>
                                                     <div className="h-full bg-white rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden shadow-lg hover:shadow-xl shadow-orange-500/10 ring-2 ring-orange-500 hover:-translate-y-1 transition-all duration-300">
                                                         <div className="absolute -top-16 -right-16 w-40 h-40 bg-orange-500/10 rounded-full blur-3xl pointer-events-none"/>
                                                         <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-orange-500/5 rounded-full blur-2xl pointer-events-none"/>

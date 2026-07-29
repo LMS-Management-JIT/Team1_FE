@@ -78,7 +78,6 @@ export function PracticeContent({
                     lessonId={lesson.id}
                     studentId={studentId}
                     onSubmitted={onQuizSubmitted}
-                    isCompleted={isCompleted}
                 />
             )}
         </div>
