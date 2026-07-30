@@ -139,7 +139,6 @@ export function SafeHtmlContent({
             const normalized = normalizeCodeBlock(rawText);
 
             const match = codeEl.className.match(/language-(\w+)/);
-
             // 1. Dùng || "java" để chặn đứng trường hợp biến bị chuỗi rỗng ("")
             let lang = (match ? match[1] : defaultLanguage) || "java";
             lang = lang.toLowerCase(); // Đưa về chữ thường để tránh lỗi Typo (vd: Java -> java)

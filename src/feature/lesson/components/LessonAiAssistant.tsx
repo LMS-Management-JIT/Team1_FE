@@ -70,7 +70,10 @@ function loadTopicChat(topicId: string): StoredTopicChat {
         const parsed = JSON.parse(raw) as StoredTopicChat;
         return {
             messages: Array.isArray(parsed.messages) ? parsed.messages : [],
-            remainingPrompts: typeof parsed.remainingPrompts === "number" ? parsed.remainingPrompts : null,
+            remainingPrompts:
+                typeof parsed.remainingPrompts === "number" && parsed.remainingPrompts >= 0
+                    ? parsed.remainingPrompts
+                    : null,
         };
     } catch {
         return { messages: [], remainingPrompts: null };
@@ -89,6 +92,7 @@ export function LessonAiAssistant({ topicId, topicName, lessonId, lessonTitle }:
     const [panelSize, setPanelSize] = useState<PanelSize>(loadPanelSize);
     const [isResizing, setIsResizing] = useState(false);
     const endRef = useRef<HTMLDivElement>(null);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
     const resizeRef = useRef<{
         startX: number;
         startY: number;
@@ -122,8 +126,19 @@ export function LessonAiAssistant({ topicId, topicName, lessonId, lessonTitle }:
     }, [messages, remainingPrompts, topicId]);
 
     useEffect(() => {
-        endRef.current?.scrollIntoView({ behavior: "smooth" });
+        const container = messagesContainerRef.current;
+        if (!container) return;
+        container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
     }, [messages, isReplying]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const frameId = window.requestAnimationFrame(() => {
+            const container = messagesContainerRef.current;
+            if (container) container.scrollTop = container.scrollHeight;
+        });
+        return () => window.cancelAnimationFrame(frameId);
+    }, [isOpen, lessonId, topicId]);
 
     useEffect(() => {
         const fitPanelToViewport = () => setPanelSize((current) => clampPanelSize(current));
@@ -210,7 +225,12 @@ export function LessonAiAssistant({ topicId, topicName, lessonId, lessonTitle }:
                     lessonTitle,
                 },
             ]);
-            setRemainingPrompts(data.remainingPrompts);
+            if (data.remainingPrompts >= 0) {
+                setRemainingPrompts(data.remainingPrompts);
+            } else {
+                setRemainingPrompts(null);
+                setError("Chưa thể kiểm tra số lượt hỏi AI còn lại.");
+            }
         } catch (requestError: any) {
             const status = requestError?.response?.status;
             setError(status === 401
@@ -259,7 +279,7 @@ export function LessonAiAssistant({ topicId, topicName, lessonId, lessonTitle }:
                         </div>
                     </header>
 
-                    <div className="flex-1 overflow-y-auto bg-orange-50/30 px-4 py-4">
+                    <div ref={messagesContainerRef} className="flex-1 overflow-y-auto bg-orange-50/30 px-4 py-4">
                         {messages.length === 0 && (
                             <div className="rounded-2xl border border-orange-100 bg-white p-4 text-sm leading-6 text-slate-600 shadow-sm">
                                 <p className="font-semibold text-slate-800">Chào bạn! Mình có thể hỗ trợ cả chương này.</p>

@@ -1,4 +1,4 @@
-import { ArrowUpRight, FileText } from "lucide-react";
+import { ArrowUpRight, FileText, LoaderCircle } from "lucide-react";
 import type { CourseDocument } from "../../../types/topic.ts";
 import { useEffect, useState } from "react";
 import { getCourseDocuments } from "../../../services/documentService.ts";
@@ -39,7 +39,17 @@ export function CourseDocuments({ documents, courseId }: { documents?: CourseDoc
     }, [documents, courseId]);
 
     if (loading) {
-        return <div className="course-documents">Đang tải tài liệu...</div>;
+        return (
+            <div className="course-documents course-documents--loading" role="status" aria-live="polite">
+                <span className="course-documents__loading-icon" aria-hidden="true">
+                    <LoaderCircle size={22} />
+                </span>
+                <span>
+                    <strong>Đang chuẩn bị tài liệu</strong>
+                    <small>Chỉ mất vài giây thôi</small>
+                </span>
+            </div>
+        );
     }
 
     if (error) {

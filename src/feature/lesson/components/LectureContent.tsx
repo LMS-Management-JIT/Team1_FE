@@ -1,7 +1,16 @@
-import { Play, Pause, Volume2, VolumeX, Maximize, CheckCircle2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { Play, Pause, Volume2, VolumeX, Maximize, CheckCircle2, LoaderCircle, TriangleAlert } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import type { Lesson } from "../../../types/lesson.ts";
 import { toast } from "sonner";
+import { apiClient } from "../../../services/apiClient.ts";
+
+type VideoAnalysis = {
+    status: string;
+    relevant: boolean;
+    summary: string;
+    extractedText: string;
+    reason: string;
+};
 
 interface LectureContentProps {
     lesson: Lesson;
@@ -17,10 +26,42 @@ export function LectureContent({ lesson, onComplete }: LectureContentProps) {
     const [currentTime, setCurrentTime] = useState("00:00");
     const [duration, setDuration] = useState("00:00");
     const [isMuted, setIsMuted] = useState(false);
+    const [videoAnalysis, setVideoAnalysis] = useState<VideoAnalysis | null>(null);
+    const [isAnalyzingVideo, setIsAnalyzingVideo] = useState(false);
+    const [videoAnalysisError, setVideoAnalysisError] = useState<string | null>(null);
     
     // Logic chống tua
     const [maxTimeWatched, setMaxTimeWatched] = useState(0);
     const [isCompleted, setIsCompleted] = useState(false);
+
+    useEffect(() => {
+        if (!lesson.videoUrl) return;
+        let cancelled = false;
+
+        const analyze = async () => {
+            setIsAnalyzingVideo(true);
+            setVideoAnalysisError(null);
+            try {
+                const { data } = await apiClient.post<VideoAnalysis>("/ai/video/analyze", {
+                    lessonId: lesson.id,
+                    frames: [],
+                });
+                if (!cancelled) setVideoAnalysis(data);
+            } catch (error) {
+                console.error("[LectureContent] Không thể phân tích video:", error);
+                if (!cancelled) {
+                    setVideoAnalysisError(
+                        "AI chưa thể phân tích video lúc này. Vui lòng thử lại sau."
+                    );
+                }
+            } finally {
+                if (!cancelled) setIsAnalyzingVideo(false);
+            }
+        };
+
+        void analyze();
+        return () => { cancelled = true; };
+    }, [lesson.id, lesson.videoUrl]);
 
     const formatTime = (timeInSeconds: number) => {
         const m = Math.floor(timeInSeconds / 60).toString().padStart(2, '0');
@@ -168,6 +209,27 @@ export function LectureContent({ lesson, onComplete }: LectureContentProps) {
                     </button>
                 )}
             </div>
+            {isAnalyzingVideo && (
+                <div className="flex items-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-700">
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                    AI đang đọc nội dung các slide trong video…
+                </div>
+            )}
+            {videoAnalysis && !videoAnalysis.relevant && (
+                <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>
+                        <strong>Video không phù hợp với bài học.</strong>
+                        {videoAnalysis.reason && ` ${videoAnalysis.reason}`}
+                    </span>
+                </div>
+            )}
+            {videoAnalysisError && (
+                <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>{videoAnalysisError}</span>
+                </div>
+            )}
         </div>
     );
 }
