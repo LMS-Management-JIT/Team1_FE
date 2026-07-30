@@ -15,6 +15,7 @@ interface SafeHtmlContentProps {
     html: string | null | undefined;
     fallback?: string;
     className?: string;
+    defaultLanguage?: string;
 }
 
 const ALLOWED_TAGS = [
@@ -111,6 +112,7 @@ export function SafeHtmlContent({
                                     html,
                                     fallback = "Nội dung đang được cập nhật.",
                                     className,
+                                    defaultLanguage = "java",
                                 }: SafeHtmlContentProps) {
     // 1. Sanitize HTML ban đầu
     const cleanHtml = useMemo(() => {
@@ -144,7 +146,7 @@ export function SafeHtmlContent({
             const normalized = normalizeCodeBlock(rawText);
 
             const match = codeEl.className.match(/language-(\w+)/);
-            const lang = match ? match[1] : "java";
+            const lang = match ? match[1] : defaultLanguage;
 
             // Bắt buộc thêm class hljs để nhận CSS nền
             codeEl.className = `language-${lang} hljs`;
@@ -168,7 +170,7 @@ export function SafeHtmlContent({
         } else {
             setHighlightedHtml(cleanHtml);
         }
-    }, [cleanHtml]);
+    }, [cleanHtml, defaultLanguage]);
 
     if (!cleanHtml) {
         return <p className="text-sm text-gray-400">{fallback}</p>;

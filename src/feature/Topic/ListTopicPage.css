@@ -73,6 +73,54 @@
     box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
 }
 
+.course-documents--loading {
+    min-height: 84px;
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border-color: #fed7aa;
+    background: linear-gradient(135deg, #fff 0%, #fff7ed 100%);
+    color: #0f172a;
+}
+
+.course-documents--loading strong,
+.course-documents--loading small {
+    display: block;
+}
+
+.course-documents--loading strong {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.course-documents--loading small {
+    margin-top: 3px;
+    color: #64748b;
+    font-size: 13px;
+}
+
+.course-documents__loading-icon {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    border-radius: 13px;
+    background: #ffedd5;
+    color: var(--color-primary);
+}
+
+.course-documents__loading-icon svg {
+    animation: course-documents-spin 0.9s linear infinite;
+}
+
+@keyframes course-documents-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .course-documents__list {
     display: flex;
     flex-direction: column;
