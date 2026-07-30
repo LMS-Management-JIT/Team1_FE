@@ -1,38 +1,53 @@
-import {useState} from "react";
-import {Check, RotateCcw, X} from "lucide-react";
+import { useState } from "react";
+import { Check, RotateCcw, X, Loader2 } from "lucide-react";
 import clsx from "clsx";
-import {useQuizQuestions, useSubmitQuiz} from "../../../hooks/useQuiz.ts";
-import type {QuizAnswerItem, QuizSubmissionResult} from "../../../types/quiz.ts";
-import {Loading} from "../../../components/lesson/ui/Loading.tsx";
+import { useQuizQuestions, useSubmitQuiz } from "../../../hooks/useQuiz.ts";
+// Thêm hook lấy tiến độ độc lập
+import { useLessonProgressByStudentAndLesson } from "../../../hooks/useLessonProgress.ts"; 
+import type { QuizAnswerItem, QuizSubmissionResult } from "../../../types/quiz.ts";
+import { Loading } from "../../../components/lesson/ui/Loading.tsx";
 
 interface QuizContentProps {
     lessonId: string;
     studentId: string;
     onSubmitted?: (result: QuizSubmissionResult, attempts: number) => void;
-    isCompleted?: boolean;
+    // ĐÃ XÓA: isCompleted?: boolean; (Để Quiz hoàn toàn độc lập)
 }
 
-export function QuizContent({lessonId, studentId, onSubmitted, isCompleted}: QuizContentProps) {
-    const {data: questions, isLoading} = useQuizQuestions(lessonId);
-    const {mutate: submitQuiz, isPending: isSubmitting} = useSubmitQuiz(studentId, lessonId);
+export function QuizContent({ lessonId, studentId, onSubmitted }: QuizContentProps) {
+    // 1. Fetch dữ liệu câu hỏi
+    const { data: questions, isLoading: isQuestionsLoading } = useQuizQuestions(lessonId);
+    
+    // 2. Tự động kiểm tra tiến độ độc lập từ bảng lesson_progress
+    const { data: progressData, isLoading: isProgressLoading } = useLessonProgressByStudentAndLesson(studentId, lessonId);
+    
+    const { mutate: submitQuiz, isPending: isSubmitting } = useSubmitQuiz(studentId, lessonId);
     const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
     const [result, setResult] = useState<QuizSubmissionResult | null>(null);
     const [attempts, setAttempts] = useState(0);
 
-    if (isLoading) {
+    // XỬ LÝ ĐIỀU KIỆN (YÊU CẦU 2): 
+    // Trạng thái đã pass CHỈ KHI: có data AND progress == 99 AND completedAt không bị null
+    // Nếu rớt 1 trong các điều kiện này -> false (phải làm bài)
+    const isQuizPassed = progressData?.progress === 99 && progressData?.completedAt != null;
+
+    // Loading chung cho cả câu hỏi và tiến độ
+    if (isQuestionsLoading || isProgressLoading) {
         return (
             <div className="flex items-center justify-center rounded-xl border border-gray-100 bg-white p-12">
-                <Loading/>
+                <Loading />
             </div>
         );
     }
 
     const safeQuestions = questions ?? [];
 
+    // CẬP NHẬT UI (YÊU CẦU 3): Thay vì báo "Chưa có câu hỏi/Không có module", luôn hiện "Đang tải module..."
     if (safeQuestions.length === 0) {
         return (
-            <div className="rounded-xl border border-gray-100 bg-white p-6 text-sm text-gray-400">
-                Bài quiz này chưa có câu hỏi nào.
+            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-gray-100 bg-white p-12 text-sm text-gray-500">
+                <Loader2 className="h-6 w-6 animate-spin text-orange-500" />
+                <span>Đang tải module...</span>
             </div>
         );
     }
@@ -40,8 +55,8 @@ export function QuizContent({lessonId, studentId, onSubmitted, isCompleted}: Qui
     const allAnswered = safeQuestions.every((q) => selectedAnswers[q.id] !== undefined);
 
     const handleSelect = (questionId: string, optionIndex: number) => {
-        if (result || isCompleted) return; 
-        setSelectedAnswers((prev) => ({...prev, [questionId]: optionIndex}));
+        if (result || isQuizPassed) return; 
+        setSelectedAnswers((prev) => ({ ...prev, [questionId]: optionIndex }));
     };
 
     const handleSubmit = () => {
@@ -68,8 +83,8 @@ export function QuizContent({lessonId, studentId, onSubmitted, isCompleted}: Qui
 
     return (
         <div className="flex flex-col gap-5">
-            {/* THÔNG BÁO HOÀN THÀNH - KHI XEM LẠI LỊCH SỬ */}
-            {isCompleted && !result && (
+            {/* THÔNG BÁO HOÀN THÀNH - KHI XEM LẠI LỊCH SỬ (Đã pass độc lập) */}
+            {isQuizPassed && !result && (
                 <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 animate-in fade-in">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
                         <Check size={20} strokeWidth={3} />
@@ -97,7 +112,7 @@ export function QuizContent({lessonId, studentId, onSubmitted, isCompleted}: Qui
                             onClick={handleRetry}
                             className="flex w-fit items-center gap-1.5 rounded-lg border border-orange-300 bg-white px-4 py-2 text-sm font-bold text-orange-600 hover:bg-orange-100 transition shadow-sm"
                         >
-                            <RotateCcw className="h-3.5 w-3.5"/>
+                            <RotateCcw className="h-3.5 w-3.5" />
                             Làm lại
                         </button>
                     )}
@@ -118,8 +133,10 @@ export function QuizContent({lessonId, studentId, onSubmitted, isCompleted}: Qui
                                 
                                 // ĐÚNG TỪ SUBMIT HIỆN TẠI VỪA NỘP
                                 const isCorrectFromSubmit = result?.results.find((r) => r.questionId === question.id)?.correctOptionIndex === optionIndex;
+                                
                                 // ĐÚNG TỪ LỊCH SỬ (ĐÃ PASS) DO BACKEND TRẢ VỀ
-                                const isCorrectFromHistory = isCompleted && !result && question.correctOptionIndex === optionIndex;
+                                const isCorrectFromHistory = isQuizPassed && !result && question.correctOptionIndex === optionIndex;
+                                
                                 // TỔNG HỢP: LÀ ĐÁP ÁN ĐÚNG
                                 const isCorrectOption = isCorrectFromSubmit || isCorrectFromHistory;
                                 
@@ -130,28 +147,24 @@ export function QuizContent({lessonId, studentId, onSubmitted, isCompleted}: Qui
                                     <button
                                         key={optionIndex}
                                         type="button"
-                                        disabled={Boolean(result) || isCompleted}
+                                        disabled={Boolean(result) || isQuizPassed}
                                         onClick={() => handleSelect(question.id, optionIndex)}
                                         className={clsx(
                                             "flex items-center justify-between rounded-lg border px-4 py-2.5 text-left text-sm transition-colors",
-                                            (result || isCompleted)
+                                            (result || isQuizPassed)
                                                 ? isCorrectOption
-                                                    // CSS TÔ XANH NHỮNG CÂU ĐÚNG
                                                     ? "border-emerald-300 bg-emerald-50 text-emerald-700 font-medium opacity-100 ring-2 ring-emerald-100"
                                                     : isWrongSelected
-                                                        // CSS TÔ ĐỎ NHỮNG CÂU VỪA CHỌN SAI
                                                         ? "border-red-300 bg-red-50 text-red-700 font-medium opacity-100"
-                                                        // MỜ ĐI CÁC CÂU KHÔNG CHỌN / KHÔNG ĐÚNG
                                                         : "border-gray-100 text-gray-400 opacity-60 cursor-not-allowed"
                                                 : isSelected
-                                                    // ĐANG LÀM BÀI -> BẤM CHỌN THÌ MÀU CAM
                                                     ? "border-orange-400 bg-orange-50 text-orange-700 font-medium"
                                                     : "border-gray-200 text-gray-700 hover:border-orange-300 hover:bg-orange-50/50"
                                         )}
                                     >
                                         <span>{option}</span>
-                                        {isCorrectOption && <Check className="h-4 w-4 shrink-0 text-emerald-600"/>}
-                                        {isWrongSelected && <X className="h-4 w-4 shrink-0 text-red-600"/>}
+                                        {isCorrectOption && <Check className="h-4 w-4 shrink-0 text-emerald-600" />}
+                                        {isWrongSelected && <X className="h-4 w-4 shrink-0 text-red-600" />}
                                     </button>
                                 );
                             })}
@@ -160,7 +173,8 @@ export function QuizContent({lessonId, studentId, onSubmitted, isCompleted}: Qui
                 );
             })}
             
-            {!result && !isCompleted && (
+            {/* ẨN NÚT NỘP BÀI NẾU ĐÃ NỘP Ở PHIÊN HIỆN TẠI (result) HOẶC ĐÃ PASS TỪ TRƯỚC (isQuizPassed) */}
+            {!result && !isQuizPassed && (
                 <button
                     type="button"
                     disabled={!allAnswered || isSubmitting}

@@ -68,20 +68,26 @@ export default function LoginPage() {
                                 validationSchema={loginSchema}
                                 onSubmit={async (values, { setSubmitting }) => {
                                     try {
-                                       // 1. Gọi hàm login MỘT LẦN DUY NHẤT và lấy response
+                                       // 1. Gọi hàm login
                                                const response: any = await login({ email: values.email, password: values.password });
 
                                                // 2. Lấy accountId từ response
                                                const accountId = response?.user?.id;
                                                 const oneSignalHash = response?.oneSignalHash;
-                                               // 3. Cấu hình OneSignal
+                                               // 3. Cấu hình OneSignal (sẽ prompt permission nếu chưa có)
                                                if (accountId) {
-                                                 setupOneSignal(accountId, oneSignalHash);
+                                                 try {
+                                                   await setupOneSignal(accountId, oneSignalHash);
+                                                 } catch (oneSignalError) {
+                                                   console.error("Lỗi cấu hình OneSignal:", oneSignalError);
+                                                   // Không throw error, user vẫn vào được dashboard
+                                                   // Lần login tiếp theo sẽ prompt permission lại
+                                                 }
                                                } else {
                                                  console.warn("Không tìm thấy accountId để cấu hình OneSignal");
                                                }
 
-                                               // 4. Thông báo và chuyển hướng
+                                               // 4. Đăng nhập thành công, chuyển hướng
                                                toast.success('Đăng nhập thành công');
                                                navigate('/dashboard', { replace: true });
                                     } catch (error: any) {

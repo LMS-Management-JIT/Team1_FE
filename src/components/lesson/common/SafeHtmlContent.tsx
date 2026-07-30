@@ -1,15 +1,8 @@
 import DOMPurify from "dompurify";
-import hljs from "highlight.js/lib/core";
-import java from "highlight.js/lib/languages/java";
-import javascript from "highlight.js/lib/languages/javascript";
-import xml from "highlight.js/lib/languages/xml";
+// import hljs from "highlight.js/lib/core";
+import hljs from "highlight.js";
 import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
-
-// Đăng ký ngôn ngữ thủ công để tránh lỗi mất file của Bundler
-hljs.registerLanguage("java", java);
-hljs.registerLanguage("javascript", javascript);
-hljs.registerLanguage("html", xml);
 
 interface SafeHtmlContentProps {
     html: string | null | undefined;
@@ -146,7 +139,15 @@ export function SafeHtmlContent({
             const normalized = normalizeCodeBlock(rawText);
 
             const match = codeEl.className.match(/language-(\w+)/);
-            const lang = match ? match[1] : defaultLanguage;
+            // 1. Dùng || "java" để chặn đứng trường hợp biến bị chuỗi rỗng ("")
+            let lang = (match ? match[1] : defaultLanguage) || "java";
+            lang = lang.toLowerCase(); // Đưa về chữ thường để tránh lỗi Typo (vd: Java -> java)
+
+            // 2. Chống crash: Nếu ngôn ngữ truyền vào chưa được register (vd: python, csharp) hoặc là "", tự động fallback về java
+            if (!hljs.getLanguage(lang)) {
+                console.warn(`[SafeHtmlContent] Ngôn ngữ "${lang}" chưa được đăng ký, tự động dùng "java"`);
+                lang = "java";
+            }
 
             // Bắt buộc thêm class hljs để nhận CSS nền
             codeEl.className = `language-${lang} hljs`;

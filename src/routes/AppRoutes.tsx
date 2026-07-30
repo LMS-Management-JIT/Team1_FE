@@ -61,7 +61,7 @@ export const AppRoutes = () => {
 
             {/* Danh sách chương trong module — cần đăng nhập */}
             <Route
-                path="/topics/:moduleId"
+                path="/courses/:courseId/modules/:moduleId"
                 element={
                     <ProtectedRoute>
                         <ListTopicPage/>

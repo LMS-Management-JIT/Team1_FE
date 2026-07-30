@@ -30,7 +30,6 @@ export function PracticeContent({
                                     isSubmitting,
                                     isDeleting,
                                     onQuizSubmitted,
-                                    isCompleted,
                                 }: PracticeContentProps) {
     const [tab, setTab] = useState<Tab>("assignment");
 
@@ -82,7 +81,6 @@ export function PracticeContent({
                     lessonId={lesson.id}
                     studentId={studentId}
                     onSubmitted={onQuizSubmitted}
-                    isCompleted={isCompleted}
                 />
             )}
         </div>
