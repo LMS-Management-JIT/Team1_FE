@@ -10,6 +10,8 @@ import { getTopicsByModule } from "../../services/topicService";
 import { getModulesByCourseId } from "../../services/moduleService";
 import { getProgressByStudent } from "../../services/lessonProgressService";
 import { useAuthContext } from "../../feature/auth/context/AuthContext";
+import { useCourseForModule } from "../../hooks/useCourseForModule";
+import { ROUTES } from "../../constants/routes";
 import type { TopicWithLessons } from "../../types/topic";
 import "./ListTopicPage.css";
 
@@ -23,23 +25,22 @@ export default function ListTopicPage() {
     const { courseId, moduleId } = useParams<{ courseId: string; moduleId: string }>();
     const { studentId } = useAuthContext();
     const navigate = useNavigate();
-    
+
     const location = useLocation();
     const state = location.state as LocationState | null;
 
     const [topics, setTopics] = useState<TopicWithLessons[]>([]);
     const [moduleName, setModuleName] = useState<string | null>(state?.moduleName ?? null);
-    const [courseName, setCourseName] = useState<string | null>(state?.courseName ?? null);
-    
+
+    const { data: courseForModule } = useCourseForModule(moduleId, studentId);
+    const courseName = courseForModule?.courseName ?? state?.courseName ?? null;
+
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
-    
+
     // State chặn render UI nếu chưa xác thực xong quyền truy cập
     const [hasAccess, setHasAccess] = useState<boolean>(false);
 
-    // ==========================================
-    // 🛡️ LÁ CHẮN BẢO MẬT: KIỂM TRA ĐIỀU KIỆN MỞ KHÓA
-    // ==========================================
     useEffect(() => {
         if (!courseId || !moduleId || !studentId) return;
         let active = true;
@@ -58,8 +59,6 @@ export default function ListTopicPage() {
                     return;
                 }
 
-                // Lưu lại tên khóa học & module nếu người dùng vào thẳng bằng link (không có state)
-                if (active && !state?.courseName) setCourseName(mods[0]?.moduleCode ? "Khóa học" : "...");
                 if (active && !state?.moduleName) setModuleName(mods[currentIndex].moduleName);
 
                 // Nếu là module đầu tiên -> Luôn được phép truy cập
@@ -74,7 +73,7 @@ export default function ListTopicPage() {
 
                 let prevTotalLessons = 0;
                 const prevLessonIds: string[] = [];
-                
+
                 prevTopics.forEach(t => {
                     t.lessons?.forEach(l => {
                         prevTotalLessons++;
@@ -118,9 +117,6 @@ export default function ListTopicPage() {
         return () => { active = false; };
     }, [courseId, moduleId, studentId, navigate, state]);
 
-    // ==========================================
-    // 📚 LẤY DỮ LIỆU BÀI HỌC (Chỉ chạy khi đã vượt qua lá chắn)
-    // ==========================================
     useEffect(() => {
         if (!hasAccess || !moduleId) return;
         let active = true;
@@ -143,9 +139,9 @@ export default function ListTopicPage() {
     }, [hasAccess, moduleId]);
 
     const currentModuleTitle = moduleName ?? "Đang tải...";
-    const currentCourseTitle = courseName ?? "Khóa học";
 
-    // Màn hình chờ trong lúc kiểm tra bảo mật
+    const currentCourseTitle = courseName ?? "Đang tải...";
+
     if (!hasAccess) {
         return (
             <div className="flex min-h-screen flex-col items-center justify-center bg-[#f4f6f8] gap-4">
@@ -159,19 +155,18 @@ export default function ListTopicPage() {
         <div className="topic-page">
             <Header/>
             <main className="topic-page__main">
-                {/* Breadcrumb đồng bộ với URL mới */}
                 <Breadcrumb
                     items={[
-                        { label: "Khóa học của tôi", href: "/" },
+                        { label: "Khóa học của tôi", href: ROUTES.DASHBOARD },
                         { label: currentCourseTitle, href: `/courses/${courseId}/modules` },
                         { label: currentModuleTitle },
                     ]}
                 />
 
                 {loading && <p className="text-slate-500 my-4">Đang tải...</p>}
-                
+
                 {error && <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 my-4">{error}</p>}
-                
+
                 {!loading && !error && (
                     <>
                         <section className="topic-page__documents">
@@ -181,7 +176,7 @@ export default function ListTopicPage() {
                             </div>
                             <CourseDocuments courseId={moduleId}/>
                         </section>
-                        
+
                         <section className="topic-page__lessons mt-8">
                             <div className="topic-page__section-title">
                                 <BookOpen size={24}/>
@@ -198,6 +193,8 @@ export default function ListTopicPage() {
                                             key={topic.topicId ?? topic.id}
                                             topic={topic}
                                             defaultOpen={false}
+                                            courseId={courseId}
+                                            moduleId={moduleId}
                                         />
                                     ))}
                                 </div>

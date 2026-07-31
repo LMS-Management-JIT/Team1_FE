@@ -3,7 +3,14 @@ import {AlignJustify, ChevronDown} from "lucide-react";
 import type {TopicWithLessons} from "../../../types/topic.ts";
 import {LessonRow} from "../LessonRow/LessonRow.tsx";
 
-export function TopicItem({topic, defaultOpen = false}: { topic: TopicWithLessons; defaultOpen?: boolean }) {
+interface TopicItemProps {
+    topic: TopicWithLessons;
+    defaultOpen?: boolean;
+    courseId?: string;
+    moduleId?: string;
+}
+
+export function TopicItem({topic, defaultOpen = false, courseId, moduleId}: TopicItemProps) {
     const [open, setOpen] = useState(defaultOpen);
 
     return (
@@ -41,7 +48,13 @@ export function TopicItem({topic, defaultOpen = false}: { topic: TopicWithLesson
             {open && topic.lessons.length > 0 && (
                 <div className="topic-item__content">
                     {topic.lessons.map((lesson) => (
-                        <LessonRow key={lesson.id} lesson={lesson} topicId={topic.id ?? topic.topicId ?? ""}/>
+                        <LessonRow
+                            key={lesson.id}
+                            lesson={lesson}
+                            topicId={topic.id ?? topic.topicId ?? ""}
+                            courseId={courseId}
+                            moduleId={moduleId}
+                        />
                     ))}
                 </div>
             )}
