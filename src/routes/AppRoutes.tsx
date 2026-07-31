@@ -58,6 +58,14 @@ export const AppRoutes = () => {
                     </ProtectedRoute>
                 }
             />
+            <Route
+                path="/courses/:courseId/modules/:moduleId/topics/:topicId/lessons/:lessonId"
+                element={
+                    <ProtectedRoute>
+                        <LessonDetailPage />
+                    </ProtectedRoute>
+                }
+            />
 
             {/* Danh sách chương trong module — cần đăng nhập */}
             <Route

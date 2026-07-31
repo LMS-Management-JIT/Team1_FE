@@ -11,7 +11,7 @@ import {
     useLessonSubmission,
     useSubmitLessonFile,
 } from "../../../hooks/useLessonSubmission";
-import { buildLessonDetailPath } from "../../../constants/routes";
+import { buildLessonDetailPath, ROUTES } from "../../../constants/routes";
 import { Breadcrumb } from "../../../components/common/Breadcrumb.tsx";
 import { Header } from "../../../layouts/Header/Header";
 import { LessonSidebar } from "../components/LessonSidebar.tsx";
@@ -21,24 +21,36 @@ import { LectureContent } from "../components/LectureContent.tsx";
 import { PracticeContent } from "../components/PracticeContent.tsx";
 import { Loading } from "../../../components/lesson/ui/Loading";
 import { addXpToRank } from "../../../services/rankService";
-import { useAuthContext } from "../../../feature/auth/context/AuthContext"; // 🔑 THÊM
+import { useAuthContext } from "../../../feature/auth/context/AuthContext";
 import { LessonAiAssistant } from "../components/LessonAiAssistant";
 import { useCourseForModule } from "../../../hooks/useCourseForModule";
 
 export function LessonDetailPage() {
-    const { topicId, lessonId } = useParams<{ topicId: string; lessonId: string }>();
+    const {
+        courseId: courseIdFromUrl,
+        moduleId: moduleIdFromUrl,
+        topicId,
+        lessonId,
+    } = useParams<{
+        courseId?: string;
+        moduleId?: string;
+        topicId: string;
+        lessonId: string;
+    }>();
     const navigate = useNavigate();
 
-    // 🔑 LẤY studentId & TÊN THẬT TỪ AUTH — KHÔNG DÙNG ID CỨNG NỮA
     const { studentId, user, isLoading: isAuthLoading } = useAuthContext();
     const studentName = user?.displayName || "Học viên";
 
     const { data: lesson, isLoading: isLessonLoading } = useLessonDetail(lessonId, !isAuthLoading);
     const { data: topic, isLoading: isTopicLoading } = useTopicDetail(topicId, !isAuthLoading);
-    const { data: moduleId } = useModuleIdForTopic(topicId, !isAuthLoading);
+
+    const { data: detectedModuleId } =
+        useModuleIdForTopic(topicId, !isAuthLoading && !moduleIdFromUrl);
+    const moduleId = moduleIdFromUrl ?? detectedModuleId;
     const { data: courseForModule } = useCourseForModule(moduleId, studentId);
 
-    const courseId = courseForModule?.courseId;
+    const courseId = courseIdFromUrl ?? courseForModule?.courseId;
     const topicsListHref =
         courseId && moduleId
             ? `/courses/${courseId}/modules/${moduleId}`
@@ -72,7 +84,6 @@ export function LessonDetailPage() {
         return <div className="flex min-h-screen items-center justify-center"><Loading/></div>;
     }
 
-    // 🔑 ĐÃ XÁC THỰC XONG NHƯNG KHÔNG CÓ studentId -> chưa đăng nhập / tài khoản không gắn học viên
     if (!studentId) {
         return (
             <div className="flex min-h-screen flex-col items-center justify-center gap-3 text-center px-4">
@@ -115,7 +126,7 @@ export function LessonDetailPage() {
 
     const handleSelectLesson = (nextLessonId: string) => {
         const nextRoute = buildLessonDetailPath(
-            courseForModule!.courseId,
+            courseId!,
             moduleId!,
             topic.id,
             nextLessonId
@@ -182,14 +193,18 @@ export function LessonDetailPage() {
                     items={[
                         {
                             label: "Khoá học của tôi",
-                            href: `/courses/${courseForModule?.courseId}/modules`
+                            href: ROUTES.DASHBOARD,
+                        },
+                        {
+                            label: courseForModule?.courseName || "Khoá học",
+                            href: courseId ? `/courses/${courseId}/modules` : undefined,
                         },
                         {
                             label: topic?.topicName || "Tên chương",
-                            href: topicsListHref
+                            href: topicsListHref,
                         },
                         {
-                            label: lesson?.lessonName || "Tên bài học"
+                            label: lesson?.lessonName || "Tên bài học",
                         },
                     ]}
                 />
@@ -254,7 +269,7 @@ export function LessonDetailPage() {
                                     toast.success("🏆 CHÚC MỪNG! Bạn đã hoàn thành trọn vẹn chương học và được thưởng +30 XP!", { duration: 5000 });
                                 } catch {}
 
-                                navigate(topicsListHref || "/");
+                                navigate(topicsListHref || ROUTES.DASHBOARD);
                             }}
                         />
                     </div>

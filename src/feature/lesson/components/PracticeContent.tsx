@@ -30,7 +30,6 @@ export function PracticeContent({
                                     isSubmitting,
                                     isDeleting,
                                     onQuizSubmitted,
-                                    isCompleted,
                                 }: PracticeContentProps) {
     const [tab, setTab] = useState<Tab>("assignment");
 

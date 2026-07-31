@@ -1,6 +1,7 @@
 import {ArrowRight, FileText, PenSquare, PlayCircle} from "lucide-react";
 import {useNavigate} from "react-router-dom";
 import type {Lesson} from "../../../types/topic.ts";
+import {buildLessonDetailPath} from "../../../constants/routes.ts";
 
 function LessonIcon({lesson}: { lesson: Lesson }) {
     const iconMap: Record<string, typeof FileText> = {
@@ -27,9 +28,11 @@ function LessonIcon({lesson}: { lesson: Lesson }) {
 interface LessonRowProps {
     lesson: Lesson;
     topicId: string;
+    courseId?: string;
+    moduleId?: string;
 }
 
-export function LessonRow({lesson, topicId}: LessonRowProps) {
+export function LessonRow({lesson, topicId, courseId, moduleId}: LessonRowProps) {
     const navigate = useNavigate();
 
     const typeLabelMap: Record<string, string> = {
@@ -41,13 +44,21 @@ export function LessonRow({lesson, topicId}: LessonRowProps) {
     const badgeClass = "text-slate-600";
     const label = typeLabelMap[lesson.type] ?? lesson.type;
 
+    const handleNavigate = () => {
+        const path = courseId && moduleId
+            ? buildLessonDetailPath(courseId, moduleId, topicId, lesson.id)
+            : `/topics/${topicId}/lessons/${lesson.id}`;
+
+        navigate(path);
+    };
+
     return (
         <div
             role="button"
             tabIndex={0}
-            onClick={() => navigate(`/topics/${topicId}/lessons/${lesson.id}`)}
+            onClick={handleNavigate}
             onKeyDown={(e) => {
-                if (e.key === "Enter") navigate(`/topics/${topicId}/lessons/${lesson.id}`);
+                if (e.key === "Enter") handleNavigate();
             }}
             className="lesson-row cursor-pointer border-slate-200 bg-white transition-colors hover:bg-slate-50"
         >
