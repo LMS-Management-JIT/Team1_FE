@@ -1,5 +1,5 @@
-import { useNavigate, useParams} from "react-router-dom";
-import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useState, useMemo } from "react";
 import { BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { useLessonDetail } from "../../../hooks/useLessonDetail";
@@ -24,6 +24,7 @@ import { addXpToRank } from "../../../services/rankService";
 import { useAuthContext } from "../../../feature/auth/context/AuthContext";
 import { LessonAiAssistant } from "../components/LessonAiAssistant";
 import { useCourseForModule } from "../../../hooks/useCourseForModule";
+import { apiClient } from "../../../services/apiClient";
 
 export function LessonDetailPage() {
     const {
@@ -37,49 +38,48 @@ export function LessonDetailPage() {
         topicId: string;
         lessonId: string;
     }>();
-    const navigate = useNavigate();
 
+    const navigate = useNavigate();
     const { studentId, user, isLoading: isAuthLoading } = useAuthContext();
     const studentName = user?.displayName || "Học viên";
 
     const { data: lesson, isLoading: isLessonLoading } = useLessonDetail(lessonId, !isAuthLoading);
     const { data: topic, isLoading: isTopicLoading } = useTopicDetail(topicId, !isAuthLoading);
 
-    const { data: detectedModuleId } =
-        useModuleIdForTopic(topicId, !isAuthLoading && !moduleIdFromUrl);
+    const { data: detectedModuleId } = useModuleIdForTopic(topicId, !isAuthLoading && !moduleIdFromUrl);
     const moduleId = moduleIdFromUrl ?? detectedModuleId;
-    const { data: courseForModule } = useCourseForModule(moduleId, studentId);
 
+    const { data: courseForModule } = useCourseForModule(moduleId, studentId);
     const courseId = courseIdFromUrl ?? courseForModule?.courseId;
-    const topicsListHref =
-        courseId && moduleId
+
+    const topicsListHref = courseId && moduleId
             ? `/courses/${courseId}/modules/${moduleId}`
             : undefined;
 
-    // FETCH TIẾN ĐỘ
     const { data: progressList = [] } = useStudentProgress(studentId ?? undefined);
 
-    // KHỞI TẠO HOOKS & LOADING STATE
     const { mutate: submitProgress, isPending: isSubmittingProgress } =
         useSubmitProgress(studentId ?? undefined, lesson?.id);
+
     const { data: existingSubmission } =
         useLessonSubmission(studentId ?? undefined, lesson?.id);
+
     const { mutateAsync: uploadFile, isPending: isUploadingFile } =
         useSubmitLessonFile(studentId ?? undefined, lesson?.id);
+
     const { mutate: removeSubmission, isPending: isDeletingSubmission } =
         useDeleteLessonSubmission(studentId ?? undefined, lesson?.id);
 
     const [pendingLessonRoute, setPendingLessonRoute] = useState<string | null>(null);
 
-    const completedLessonIds = new Set(
+    const completedLessonIds = useMemo(() => new Set(
         Array.isArray(progressList)
             ? progressList
                 .filter((p) => p.completed === true)
                 .map((p) => p.lessonId || (p as any).lesson_id)
             : []
-    );
+    ), [progressList]);
 
-    // CHỜ AUTH + LESSON + TOPIC LOAD XONG
     if (isAuthLoading || isLessonLoading || isTopicLoading || !lesson || !topic) {
         return <div className="flex min-h-screen items-center justify-center"><Loading/></div>;
     }
@@ -99,44 +99,69 @@ export function LessonDetailPage() {
         );
     }
 
-    const currentLessonOrder =
-        topic.lessons?.find((l) => l.id === lesson.id)?.lessonOrder;
+    const currentLessonOrder = topic.lessons?.find((l) => l.id === lesson.id)?.lessonOrder;
+
+    // 💡 LOGIC KIỂM TRA THƯỞNG TOPIC MỚI: Tách biệt hoàn toàn khỏi nút điều hướng
+    const checkTopicCompletionReward = async (newCompletedSet: Set<string>) => {
+        if (!topic?.lessons) return;
+        const allDone = topic.lessons.every((l) => newCompletedSet.has(l.id));
+        if (allDone) {
+            try {
+                await addXpToRank(studentId, 30, `TOPIC_${topic.id}`);
+                toast.success("🏆 CHÚC MỪNG! Bạn đã hoàn thành trọn vẹn chương học và được thưởng +30 XP!", { duration: 5000 });
+            } catch (e) {
+                // Ignore XP error if already claimed
+            }
+        }
+    };
 
     const handleLessonComplete = async (xpEarned: number) => {
-        if (completedLessonIds.has(lesson.id)) {
-            console.log("[UI BLOCK] Bài đã hoàn thành, từ chối chạy hàm cộng điểm.");
-            return;
-        }
+        if (completedLessonIds.has(lesson.id)) return;
 
+        // Lưu tiến độ REST cơ bản (Cho biết bài này xong)
         submitProgress({
             studentId, lessonId: lesson.id, progress: 100, completed: true, lastPosition: 0,
         });
 
+        // 🚀 BẮN KAFKA ĐỂ XỬ LÝ XP VÀ COURSE PROGRESS NGẦM
+        apiClient.post("/kafka/lesson-completed", {
+            studentId: studentId,
+            lessonId: lesson.id,
+            courseId: courseId, // Đã có sẵn từ params URL
+            xpEarned: xpEarned
+        });
+
+        // Giao diện (UI) hiện thành công luôn, ko cần đợi Backend
+        const newCompletedSet = new Set(completedLessonIds);
+        newCompletedSet.add(lesson.id);
+
         if (xpEarned > 0) {
-            try {
-                await addXpToRank(studentId, xpEarned, lesson.id);
-                toast.success(`Tuyệt vời! Bạn nhận được +${xpEarned} XP!`, { duration: 4000 });
-            } catch (e) {
-                console.error("[LỖI CỘNG XP] Thất bại:", e);
-            }
+            toast.success(`Tuyệt vời! Bạn nhận được +${xpEarned} XP!`, { duration: 4000 });
         } else {
             toast.success(`Đã lưu tiến độ hoàn thành bài học!`, { duration: 3000 });
         }
     };
 
     const handleSelectLesson = (nextLessonId: string) => {
-        const nextRoute = buildLessonDetailPath(
-            courseId!,
-            moduleId!,
-            topic.id,
-            nextLessonId
-        );
+        const nextRoute = buildLessonDetailPath(courseId!, moduleId!, topic.id, nextLessonId);
         const isCurrentLessonCompleted = completedLessonIds.has(lesson.id);
 
         if (lesson.type === "READING" && !isCurrentLessonCompleted) {
             setPendingLessonRoute(nextRoute);
         } else {
             navigate(nextRoute);
+        }
+    };
+
+    // 💡 HÀM ĐIỀU HƯỚNG TRỞ VỀ TOPIC (NÚT XANH DƯƠNG MỚI)
+    const handleNavigateBack = () => {
+        const backRoute = topicsListHref || ROUTES.DASHBOARD;
+        const isCurrentLessonCompleted = completedLessonIds.has(lesson.id);
+
+        if (lesson.type === "READING" && !isCurrentLessonCompleted) {
+            setPendingLessonRoute(backRoute);
+        } else {
+            navigate(backRoute);
         }
     };
 
@@ -178,7 +203,7 @@ export function LessonDetailPage() {
                                 <BookOpen className="w-8 h-8" />
                             </div>
                             <h3 className="text-xl font-bold text-slate-800">Xác nhận đọc xong?</h3>
-                            <p className="text-slate-500 text-sm">Bạn đã đọc xong tài liệu này và muốn chuyển sang bài tiếp theo?</p>
+                            <p className="text-slate-500 text-sm">Bạn đã đọc xong tài liệu này và muốn chuyển trang?</p>
                             <div className="flex gap-3 w-full mt-4">
                                 <button onClick={() => setPendingLessonRoute(null)} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors">Chưa xong</button>
                                 <button onClick={() => { handleLessonComplete(0); navigate(pendingLessonRoute); setPendingLessonRoute(null); }} className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl shadow-lg shadow-orange-500/30 transition-colors">Đã đọc xong</button>
@@ -191,21 +216,9 @@ export function LessonDetailPage() {
             <div className="mx-auto w-full max-w-7xl flex-1 px-4 pt-6 pb-4 sm:px-6 sm:pt-8 lg:px-6">
                 <Breadcrumb
                     items={[
-                        {
-                            label: "Khoá học của tôi",
-                            href: ROUTES.DASHBOARD,
-                        },
-                        {
-                            label: courseForModule?.courseName || "Khoá học",
-                            href: courseId ? `/courses/${courseId}/modules` : undefined,
-                        },
-                        {
-                            label: topic?.topicName || "Tên chương",
-                            href: topicsListHref,
-                        },
-                        {
-                            label: lesson?.lessonName || "Tên bài học",
-                        },
+                        { label: "Khoá học của tôi", href: "/" },
+                        { label: topic.topicName, href: topicsListHref },
+                        { label: lesson.lessonName },
                     ]}
                 />
 
@@ -223,31 +236,33 @@ export function LessonDetailPage() {
                             <PracticeContent
                                 lesson={lesson} studentId={studentId} existingSubmission={existingSubmission} onSubmit={handleSubmitPractice}
                                 onDeleteSubmission={handleDeleteSubmission} isSubmitting={isUploadingFile || isSubmittingProgress} isDeleting={isDeletingSubmission}
-                                // Đổi từ .includes sang .has để chỉ nhận đúng ID bài học, bỏ qua các ID rác cũ
-                                isCompleted={completedLessonIds.has(lesson.id)}
                                 onQuizSubmitted={async (result, attempts) => {
-                                    // Bỏ dòng khai báo customFirebaseId dị dạng đi
                                     if (result.scorePercent === 100) {
                                         submitProgress({
                                             studentId,
-                                            lessonId: lesson.id, // Dùng chuẩn xác ID của bài học này
-                                            progress: 99,
+                                            lessonId: lesson.id,
+                                            progress: 99, 
                                             completed: true,
                                             lastPosition: 0
                                         });
 
                                         const xp = (attempts === 1) ? 15 : 10;
                                         try {
-                                            await addXpToRank(studentId, xp, lesson.id); // Dùng lesson.id cho đồng bộ
+                                            await addXpToRank(studentId, xp, lesson.id); 
                                             toast.success(`Tuyệt vời! Bạn nhận được +${xp} XP!`, { duration: 5000 });
                                         } catch (e) {
                                             console.error("[LƯU XP] Thất bại:", e);
-                                            toast.error("Lỗi: Không thể thêm XP.");
                                         }
+
+                                        // Kiểm tra ngay xem pass Quiz thì có 100% Topic không
+                                        const newCompletedSet = new Set(completedLessonIds);
+                                        newCompletedSet.add(lesson.id);
+                                        await checkTopicCompletionReward(newCompletedSet);
+
                                     } else {
                                         submitProgress({
                                             studentId,
-                                            lessonId: lesson.id, // Dùng chuẩn xác ID của bài học
+                                            lessonId: lesson.id, 
                                             progress: 50,
                                             completed: false,
                                             lastPosition: 0
@@ -258,19 +273,10 @@ export function LessonDetailPage() {
                         )}
 
                         <LessonPagination
-                            lessons={topic.lessons} currentLessonId={lesson.id} onSelectLesson={handleSelectLesson}
-                            onCompleteTopic={async () => {
-                                if (lesson.type === "READING" && !completedLessonIds.has(lesson.id)) {
-                                    await handleLessonComplete(0);
-                                }
-
-                                try {
-                                    await addXpToRank(studentId, 30, `TOPIC_${topic.id}`);
-                                    toast.success("🏆 CHÚC MỪNG! Bạn đã hoàn thành trọn vẹn chương học và được thưởng +30 XP!", { duration: 5000 });
-                                } catch {}
-
-                                navigate(topicsListHref || ROUTES.DASHBOARD);
-                            }}
+                            lessons={topic.lessons} 
+                            currentLessonId={lesson.id} 
+                            onSelectLesson={handleSelectLesson}
+                            onNavigateBack={handleNavigateBack} // Sử dụng hàm điều hướng độc lập
                         />
                     </div>
 

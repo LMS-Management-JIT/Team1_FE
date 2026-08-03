@@ -4,6 +4,8 @@ import { Trophy, ArrowUp, ArrowDown, Minus, Crown, Flame, Medal, Sparkles, Gift,
 // Nhớ import thêm hàm initStudentRankIfNeeded từ rankService nhé
 import { getLeaderboard, initStudentRankIfNeeded, type RankResponse } from '../../services/rankService';
 import { useAuth } from '../../services/authService';
+import { Client } from "@stomp/stompjs";
+import SockJS from "sockjs-client";
 
 // ==========================================
 // COMPONENT 1: HIỆU ỨNG MƯA CODE (CODE RAIN)
@@ -158,7 +160,7 @@ const RewardProgress = ({ currentRank }: { currentRank: number }) => {
     )
 }
 
-// ==========================================
+// ========================================== Team 1 FE,BE : PR tách logic quiz, tự động đồng bộ tiến độ khóa học lên firebase, ngăn cản truy cập module bị khóa, áp dụng khóa dây chuyền module, cải thiện UI tải và làm mới điều hướng. @Nguyễn Nam 
 // TRANG CHÍNH: RANK PAGE
 // ==========================================
 export default function RankPage() {
@@ -188,7 +190,26 @@ export default function RankPage() {
 
         loadLeaderboardData();
     }, [studentId]);
-
+    useEffect(() => {
+        // Khởi tạo WebSocket lắng nghe sự kiện từ Kafka
+        const SOCKET_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api").replace(/\/api\/?$/, "") + "/ws";
+        
+        const client = new Client({
+            webSocketFactory: () => new SockJS(SOCKET_URL) as any,
+            onConnect: () => {
+                console.log("🟢 Bảng xếp hạng đã kết nối Live!");
+                // Khi Kafka cộng xong XP, nó sẽ báo vào kênh này
+                client.subscribe('/topic/ranks', () => {
+                    console.log("⚡ Có người vừa lên điểm! Cập nhật lại BXH...");
+                    // Reload lại API BXH âm thầm
+                    getLeaderboard().then(setLeaderboard);
+                });
+            }
+        });
+        
+        client.activate();
+        return () => { client.deactivate(); };
+    }, []);
     if (loading || isAuthLoading) {
         return (
             <div className="flex flex-col h-screen bg-slate-50 items-center justify-center gap-4">
