@@ -9,6 +9,7 @@ import { ProtectedRoute } from "../components/auth/PrivateRoute.tsx";
 import NotificationsPage from '../feature/notifications/NotificationsPage';
 import ForbiddenPage from '../pages/ForbiddenPage'
 import RankPage from "../feature/rank/RankPage";
+import { ROUTES } from "../constants/routes";
 
 export const AppRoutes = () => {
     return (
@@ -52,6 +53,14 @@ export const AppRoutes = () => {
             {/* Trang chi tiết bài học — cần đăng nhập */}
             <Route
                 path="topics/:topicId/lessons/:lessonId"
+                element={
+                    <ProtectedRoute>
+                        <LessonDetailPage/>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path={ROUTES.LESSON_DETAIL}
                 element={
                     <ProtectedRoute>
                         <LessonDetailPage/>
