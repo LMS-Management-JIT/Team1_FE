@@ -1,0 +1,24 @@
+@import "tailwindcss";
+@import "highlight.js/styles/vs2015.css";
+@import "./styles/variables.css";
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+    background: #f3f3f3;
+}
+
+@layer base {
+    a {
+        color: inherit;
+        text-decoration: none;
+    }
+}
+
+button,
+input {
+    font: inherit;
+}
